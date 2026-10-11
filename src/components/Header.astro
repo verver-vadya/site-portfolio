@@ -1,18 +1,33 @@
 ---
 import { href } from "../scripts/cases";
 const home = href();
-const isHome = Astro.url.pathname === home;
-const to = (id: string) => (isHome ? `#${id}` : `${home}#${id}`);
+const path = Astro.url.pathname;
+// у раздела и его вложенных страниц (работа внутри «Работ») пункт меню отмечен
+const items = [
+  { to: "works/", label: "Работы", also: "cases/" },
+  { to: "prices/", label: "Цены" },
+  { to: "about/", label: "Обо мне", cls: "nav__about" },
+  { to: "contact/", label: "Связаться" },
+].map((it) => {
+  const here = path === href(it.to);
+  const inside = here || path.startsWith(href(it.to)) || (it.also ? path.startsWith(href(it.also)) : false);
+  return { ...it, here, inside };
+});
 ---
 
 <header class="header wrap">
   <a class="mark" href={home} aria-label="verver, на главную">verver</a>
   <nav aria-label="Разделы">
     <ul class="caps">
-      <li><a class="link" href={to("works")}>Работы</a></li>
-      <li><a class="link" href={to("prices")}>Цены</a></li>
-      <li class="nav__about"><a class="link" href={to("about")}>Обо мне</a></li>
-      <li><a class="link" href={to("contact")}>Связаться</a></li>
+      {
+        items.map((it) => (
+          <li class={it.cls}>
+            <a class:list={["link", { "is-here": it.inside }]} href={href(it.to)} aria-current={it.here ? "page" : undefined}>
+              {it.label}
+            </a>
+          </li>
+        ))
+      }
     </ul>
   </nav>
 </header>
@@ -51,11 +66,15 @@ const to = (id: string) => (isHome ? `#${id}` : `${home}#${id}`);
     min-height: 44px;
     text-decoration-color: transparent;
   }
+  /* текущий раздел подчёркнут постоянно */
+  ul a.is-here {
+    text-decoration-color: currentColor;
+  }
   @media (max-width: 360px) {
     ul {
       gap: var(--s-4);
     }
-    /* на узком телефоне четыре пункта не влезают: «Обо мне» рядом, его видно при прокрутке */
+    /* на узком телефоне четыре пункта не влезают: «Обо мне» есть в конце главной и других страниц */
     .nav__about {
       display: none;
     }

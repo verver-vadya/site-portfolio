@@ -20,7 +20,7 @@ const host = new URL(d.url).host + new URL(d.url).pathname.replace(/\/$/, "");
 
 <Base title={`${d.title} — ${d.niche.toLowerCase()} · verver`} description={d.summary}>
   <article class="case wrap">
-    <a class="case__back caps link" href={href("#works")}>← Все работы</a>
+    <a class="case__back caps link" href={href("works/")}>← Все работы</a>
 
     <header class="case__head">
       <h1 class="case__title">{d.title}</h1>

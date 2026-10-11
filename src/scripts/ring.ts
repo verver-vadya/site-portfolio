@@ -1,13 +1,17 @@
-// Кольцо работ: перетаскивание мышью и пальцем, свайп трекпадом, стрелки, Enter.
-// Обычную прокрутку страницы не перехватываем: вертикальный жест уходит странице,
-// а при прокрутке кольцо лишь слегка доворачивается. Без анимаций в системе кольцо
-// не крутится само и не разгоняется, повороты кнопками проявляются на месте.
+// Кольцо работ: медленно крутится само, его можно тянуть мышью и пальцем, крутить
+// свайпом трекпада, стрелками и кнопками, Enter открывает работу. Прокрутку страницы
+// не перехватываем и от неё не крутимся: вертикальный жест уходит странице.
+// Сам ход замирает под курсором, при фокусе с клавиатуры, вне экрана и на 2,5 с после
+// любого действия человека. Без анимаций в системе кольцо стоит и не разгоняется,
+// повороты кнопками проявляются на месте.
 
 type CaseInfo = { title: string; meta: string; href: string };
 
 const TURN_MS = 560; // поворот кнопкой или стрелкой
 const INTRO_MS = 1300; // доворот при загрузке
-const SCROLL_TURN = 0.012; // градусов на пиксель прокрутки
+const AUTO_SPEED = 2.5 / 1000; // сам ход, градусов в миллисекунду: панель за 12 секунд
+const AUTO_EASE = 600; // за сколько миллисекунд сам ход плавно набирает скорость или замирает
+const AUTO_DELAY = 2500; // пауза после действия человека, потом кольцо снова идёт само
 const CLICK_SLOP = 6; // меньше этого сдвига — это нажатие, а не перетаскивание
 
 // Кривая поворота: мягкий старт, долгое торможение, как --ease-turn: cubic-bezier(0.35, 0, 0.15, 1)
@@ -45,8 +49,12 @@ export function initRing(ring: HTMLElement) {
 
   let angle = parseFloat(track.style.getPropertyValue("--angle")) || 0; // поворот кольца, градусы
   const home = angle;
-  let scrollTurn = 0; // доворот от прокрутки страницы (только для вида)
   let raf = 0;
+  let prev = 0; // время прошлого кадра
+  let auto = 0; // текущая скорость самого хода
+  let hold = 0; // до этого момента сам ход ждёт
+  let hover = false;
+  let onScreen = true;
   let tween: { from: number; to: number; start: number; dur: number } | null = null;
   let glide: { v: number; last: number } | null = null; // инерция после броска
   let shown = -1;
@@ -56,7 +64,7 @@ export function initRing(ring: HTMLElement) {
   const frontIndex = (a = angle) => Math.round(-a / step);
 
   function render() {
-    track.style.setProperty("--angle", `${(angle + scrollTurn).toFixed(3)}deg`);
+    track.style.setProperty("--angle", `${angle.toFixed(3)}deg`);
     const ci = caseOf(frontIndex());
     if (ci !== shown) {
       shown = ci;
@@ -72,8 +80,20 @@ export function initRing(ring: HTMLElement) {
     }
   }
 
+  // сам ход идёт, только когда человек ничего не делает с кольцом и видит его
+  const autoWanted = () =>
+    !reduce.matches && !drag && !hover && onScreen && !document.hidden && !ring.matches(":focus-visible");
+  const autoTarget = (now: number) => (!tween && !glide && autoWanted() && now >= hold ? AUTO_SPEED : 0);
+  function pause(ms = AUTO_DELAY) {
+    hold = performance.now() + ms;
+    auto = 0;
+    setTimeout(kick, ms + 20);
+  }
+
   function loop(now: number) {
     raf = 0;
+    const dt = Math.min(48, Math.max(0, now - prev));
+    prev = now;
     if (tween) {
       const t = (now - tween.start) / tween.dur;
       angle = tween.from + (tween.to - tween.from) * smooth(t);
@@ -90,16 +110,24 @@ export function initRing(ring: HTMLElement) {
         glide = null;
         snap(TURN_MS * 0.8);
       }
+    } else if (!drag) {
+      const target = autoTarget(now);
+      auto += (target - auto) * (1 - Math.exp(-dt / AUTO_EASE));
+      if (target === 0 && auto < AUTO_SPEED * 0.01) auto = 0;
+      angle -= auto * dt;
     }
     render();
-    if (tween || glide) raf = requestAnimationFrame(loop);
+    if (tween || glide || auto || autoTarget(now)) raf = requestAnimationFrame(loop);
   }
-  const kick = () => {
-    if (!raf) raf = requestAnimationFrame(loop);
-  };
+  function kick() {
+    if (raf) return;
+    prev = performance.now();
+    raf = requestAnimationFrame(loop);
+  }
 
   function turnTo(target: number, dur = TURN_MS) {
     glide = null;
+    pause();
     if (reduce.matches || dur <= 0) {
       tween = null;
       angle = target;
@@ -132,6 +160,7 @@ export function initRing(ring: HTMLElement) {
     if (e.button !== 0) return;
     tween = null;
     glide = null;
+    pause();
     drag = { id: e.pointerId, x: e.clientX, y: e.clientY, last: e.clientX, lastT: e.timeStamp, moved: 0, v: 0, horizontal: e.pointerType === "mouse" ? true : null };
   });
   ring.addEventListener("pointermove", (e) => {
@@ -144,6 +173,7 @@ export function initRing(ring: HTMLElement) {
       drag.horizontal = Math.abs(e.clientX - drag.x) > Math.abs(e.clientY - drag.y);
       if (!drag.horizontal) {
         drag = null;
+        kick();
         return;
       }
     }
@@ -167,7 +197,7 @@ export function initRing(ring: HTMLElement) {
     if (d.moved < CLICK_SLOP && e.type === "pointerup") {
       // нажатие: по передней панели открываем работу, по боковой — поворачиваем к ней
       const panel = (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)?.closest<HTMLElement>(".ring__panel");
-      if (!panel) return;
+      if (!panel) return kick();
       const i = Number(panel.dataset.i);
       const k = frontIndex();
       let nearest = i;
@@ -180,12 +210,17 @@ export function initRing(ring: HTMLElement) {
     const idle = e.timeStamp - d.lastT > 80;
     if (!reduce.matches && !idle && Math.abs(d.v) > 0.03) {
       glide = { v: Math.max(-1.2, Math.min(1.2, d.v)), last: performance.now() };
+      pause();
       kick();
     } else snap();
   };
   ring.addEventListener("pointerup", release);
   ring.addEventListener("pointercancel", release);
-  ring.addEventListener("lostpointercapture", (e) => drag && release(e));
+  // На телефоне палец сначала «держит» панель под собой, и когда кольцо забирает жест себе,
+  // панель теряет захват. Отпускаем кольцо, только если захват потеряло оно само.
+  ring.addEventListener("lostpointercapture", (e) => {
+    if (e.target === ring && drag) release(e);
+  });
   ring.addEventListener("dragstart", (e) => e.preventDefault());
 
   // ---- трекпад: горизонтальный свайп крутит кольцо, вертикальный листает страницу ----
@@ -197,6 +232,7 @@ export function initRing(ring: HTMLElement) {
       e.preventDefault();
       tween = null;
       glide = null;
+      pause();
       angle -= e.deltaX * degPerPx();
       render();
       clearTimeout(wheelTimer);
@@ -216,22 +252,23 @@ export function initRing(ring: HTMLElement) {
   $("[data-ring-next]")?.addEventListener("click", () => toCase(1));
   $("[data-ring-prev]")?.addEventListener("click", () => toCase(-1));
 
-  // ---- лёгкий доворот при прокрутке страницы ----
-  let ticking = false;
-  addEventListener(
-    "scroll",
-    () => {
-      if (reduce.matches || ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        ticking = false;
-        const y = Math.min(scrollY, innerHeight * 1.5);
-        scrollTurn = -y * SCROLL_TURN * (360 / n / 30);
-        render();
-      });
-    },
-    { passive: true }
-  );
+  // ---- когда сам ход замирает и продолжается ----
+  ring.addEventListener("pointerenter", (e) => {
+    if (e.pointerType === "mouse") hover = true;
+  });
+  ring.addEventListener("pointerleave", (e) => {
+    if (e.pointerType !== "mouse") return;
+    hover = false;
+    kick();
+  });
+  ring.addEventListener("focus", kick);
+  ring.addEventListener("blur", kick);
+  document.addEventListener("visibilitychange", kick);
+  reduce.addEventListener("change", kick);
+  new IntersectionObserver(([en]) => {
+    onScreen = en.isIntersecting;
+    kick();
+  }).observe(ring);
 
   // кольцо пересчитывает радиус само (через CSS), здесь только перерисовать
   addEventListener("resize", render, { passive: true });
@@ -241,6 +278,9 @@ export function initRing(ring: HTMLElement) {
   if (!reduce.matches) {
     angle = home + step * 2.5;
     render();
-    requestAnimationFrame(() => turnTo(home, INTRO_MS));
+    requestAnimationFrame(() => {
+      turnTo(home, INTRO_MS);
+      pause(INTRO_MS + 1200);
+    });
   }
 }

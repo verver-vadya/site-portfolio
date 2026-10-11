@@ -8,4 +8,5 @@ export const owner = {
   inn: "511702630968",
   telegram: "notverver", // без @
   email: "verver.company@mail.ru",
+  formspree: "meaezpda", // номер формы из адреса https://formspree.io/f/номер (см. README «Заявки»)
 };
