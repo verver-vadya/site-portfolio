@@ -1,0 +1,87 @@
+---
+import Base from "../layouts/Base.astro";
+import { href } from "../scripts/cases";
+import { owner } from "../site";
+---
+
+<Base
+  title="Политика конфиденциальности · verver"
+  description="Какие данные получает форма заявки, зачем и как попросить их удалить."
+>
+  <article class="policy wrap">
+    <p class="caps muted">Редакция от [ЗАПОЛНИТЬ: дата]</p>
+    <h1>Политика конфиденциальности</h1>
+
+    <h2>1. Кто обрабатывает данные</h2>
+    <p>
+      Оператор персональных данных: {owner.fullName}, {owner.status}, ИНН {owner.inn}. По&nbsp;вопросам обработки
+      данных пишите на&nbsp;{owner.email}.
+    </p>
+
+    <h2>2. Какие данные я получаю</h2>
+    <p>
+      То, что вы указываете в&nbsp;форме заявки: имя, ник в&nbsp;Telegram, телефон или почту, пару слов о&nbsp;бизнесе,
+      тип сайта, сроки, бюджет и&nbsp;комментарий. [ЗАПОЛНИТЬ: если подключена Яндекс Метрика — cookie и&nbsp;обезличенные
+      данные о&nbsp;посещениях.]
+    </p>
+
+    <h2>3. Зачем</h2>
+    <p>
+      Чтобы ответить на&nbsp;заявку и&nbsp;обсудить сайт. Данные не&nbsp;используются для рассылок и&nbsp;не&nbsp;передаются
+      третьим лицам, кроме сервиса, который доставляет заявки: [ЗАПОЛНИТЬ: например, Formspree или Telegram].
+    </p>
+
+    <h2>4. Основание и сроки</h2>
+    <p>
+      Основание — ваше согласие, которое вы даёте, отмечая галочку в&nbsp;форме. Данные хранятся [ЗАПОЛНИТЬ: срок, например
+      один год после последнего сообщения] и&nbsp;удаляются по&nbsp;истечении срока или по&nbsp;вашему запросу.
+    </p>
+
+    <h2>5. Ваши права</h2>
+    <p>
+      Вы можете узнать, какие данные о&nbsp;вас хранятся, попросить исправить или удалить их и&nbsp;отозвать согласие,
+      написав на&nbsp;{owner.email}. Отвечу в&nbsp;течение 10&nbsp;рабочих дней.
+    </p>
+
+    <a class="policy__back caps link" href={href()}>← На главную</a>
+  </article>
+</Base>
+
+<style>
+  .policy {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+    gap: var(--s-4);
+    padding-block: var(--s-16) var(--s-24);
+  }
+  .policy > * {
+    max-width: 68ch;
+  }
+  h1 {
+    margin-bottom: var(--s-8);
+    /* «конфиденциальности» — длинное слово: на узком телефоне шрифт меньше */
+    font-size: clamp(1.75rem, 1rem + 3.6vw, 3.5rem);
+    overflow-wrap: anywhere;
+    font-weight: 760;
+    line-height: var(--lh-head);
+    text-transform: uppercase;
+  }
+  h2 {
+    margin-top: var(--s-6);
+    font-size: var(--fs-md);
+    font-weight: 700;
+  }
+  p {
+    text-wrap: pretty;
+    overflow-wrap: anywhere;
+  }
+  .policy__back {
+    display: inline-flex;
+    align-items: center;
+    justify-self: start;
+    min-height: 44px;
+    margin-top: var(--s-8);
+    text-decoration: none;
+  }
+</style>

@@ -1,0 +1,63 @@
+---
+import { href } from "../scripts/cases";
+const home = href();
+const isHome = Astro.url.pathname === home;
+const to = (id: string) => (isHome ? `#${id}` : `${home}#${id}`);
+---
+
+<header class="header wrap">
+  <a class="mark" href={home} aria-label="verver, на главную">verver</a>
+  <nav aria-label="Разделы">
+    <ul class="caps">
+      <li><a class="link" href={to("works")}>Работы</a></li>
+      <li><a class="link" href={to("prices")}>Цены</a></li>
+      <li class="nav__about"><a class="link" href={to("about")}>Обо мне</a></li>
+      <li><a class="link" href={to("contact")}>Связаться</a></li>
+    </ul>
+  </nav>
+</header>
+
+<style>
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    height: var(--header-h);
+  }
+  .mark {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-family: var(--font-mark);
+    font-weight: 600;
+    font-size: 1.625rem;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+    transition: opacity var(--d-fast) var(--ease-out);
+  }
+  .mark:active {
+    opacity: 0.6;
+  }
+  ul {
+    display: flex;
+    gap: clamp(var(--s-4), 2.4vw, var(--s-8));
+  }
+  ul a {
+    display: inline-flex;
+    white-space: nowrap;
+    align-items: center;
+    min-height: 44px;
+    text-decoration-color: transparent;
+  }
+  @media (max-width: 360px) {
+    ul {
+      gap: var(--s-4);
+    }
+    /* на узком телефоне четыре пункта не влезают: «Обо мне» рядом, его видно при прокрутке */
+    .nav__about {
+      display: none;
+    }
+  }
+</style>

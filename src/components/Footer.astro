@@ -1,0 +1,28 @@
+---
+import { href } from "../scripts/cases";
+import { owner } from "../site";
+const year = new Date().getFullYear();
+---
+
+<footer class="footer wrap caps muted">
+  <span>© verver, {year}</span>
+  <span>{owner.fullName}, {owner.status}, ИНН {owner.inn}</span>
+  <a class="link" href={href("privacy/")}>Политика конфиденциальности</a>
+</footer>
+
+<style>
+  .footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2) var(--s-6);
+    padding-block: var(--s-8) var(--s-6);
+    border-top: 1px solid var(--c-line);
+  }
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+</style>

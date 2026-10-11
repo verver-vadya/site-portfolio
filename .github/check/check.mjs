@@ -5,6 +5,7 @@
 //   npm run check           ошибки валят проверку, заглушки только предупреждают (черновик)
 //   npm run check:release   заглушки тоже валят проверку (перед публикацией на боевой адрес)
 //   npm run check -- --base <папка>   ещё сравнить размеры блоков с прошлой версией сайта из этой папки
+//   npm run check -- --site <папка>   проверить собранный сайт из папки (Astro: dist), а не корень репозитория
 //
 // Скриншоты и отчёт складываются в .check/ в корне сайта.
 
@@ -16,6 +17,8 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const OUT = path.join(ROOT, ".check");
+const SITE_ARG = process.argv.indexOf("--site");
+const SITE = SITE_ARG > 0 && process.argv[SITE_ARG + 1] ? path.resolve(process.argv[SITE_ARG + 1]) : ROOT;
 const RELEASE = process.argv.includes("--release");
 const BASE_ARG = process.argv.indexOf("--base");
 const BASE = BASE_ARG > 0 && process.argv[BASE_ARG + 1] ? path.resolve(process.argv[BASE_ARG + 1]) : null;
@@ -95,7 +98,7 @@ const TYPES = {
   ".txt": "text/plain; charset=utf-8", ".ico": "image/x-icon", ".pdf": "application/pdf",
 };
 
-async function resolveFile(urlPath, root = ROOT) {
+async function resolveFile(urlPath, root = SITE) {
   const rel = decodeURIComponent(urlPath.split("?")[0]).replace(/^\/+/, "");
   if (rel.split("/").some((part) => part.startsWith(".") || part === "node_modules")) return null;
   let file = path.join(root, rel);
@@ -108,7 +111,7 @@ async function resolveFile(urlPath, root = ROOT) {
   }
 }
 
-function startServer(root = ROOT) {
+function startServer(root = SITE) {
   const server = http.createServer(async (req, res) => {
     if (req.method === "POST") { res.writeHead(405).end(); return; }
     const file = await resolveFile(new URL(req.url, "http://x").pathname, root);
@@ -319,6 +322,8 @@ async function revealAll(page) {
 function scanOverlap(scope) {
   // Скрытое визуально (в том числе .visually-hidden для экранного диктора) не считается
   const shown = (el) => {
+    // ответ в закрытом <details> браузер не рисует, но рамку у него всё равно сообщает
+    if (el.checkVisibility && !el.checkVisibility()) return false;
     for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
       const s = getComputedStyle(n);
       const r = n.getBoundingClientRect();
@@ -410,7 +415,8 @@ async function checkHoverOverlap(page, pathname, label) {
     }
     let n = 0;
     for (const sel of out) {
-      for (const el of document.querySelectorAll(sel)) if (n < 12 && el.getBoundingClientRect().width) el.dataset.checkHover = String(n++);
+      // элемент может подходить под несколько правил: метим один раз, иначе номер перезапишется
+      for (const el of document.querySelectorAll(sel)) if (n < 12 && !el.dataset.checkHover && el.getBoundingClientRect().width) el.dataset.checkHover = String(n++);
     }
     return n;
   });
@@ -644,8 +650,15 @@ async function fillValid(form) {
     const type = await input.getAttribute("type");
     if (["hidden", "submit"].includes(type) || (await input.getAttribute("tabindex")) === "-1") continue;
     if (type === "checkbox") { if (await input.getAttribute("required") !== null) await input.check(); continue; }
+    // группа переключателей: отмечаем первый вариант, если в группе ещё ничего не выбрано
+    if (type === "radio") {
+      const picked = await input.evaluate((el) => !!el.form?.querySelector(`input[type="radio"][name="${CSS.escape(el.name)}"]:checked`));
+      if (!picked) await input.check();
+      continue;
+    }
     const name = (await input.getAttribute("name")) || "";
-    const value = type === "tel" || /phone/i.test(name) ? "8 (912) 345-67-80"
+    const value = (await input.getAttribute("data-validate")) === "contact" ? "@check_anna"
+      : type === "tel" || /phone/i.test(name) ? "8 (912) 345-67-80"
       : type === "email" ? "check@mail.ru"
       : (await input.evaluate((el) => el.tagName)) === "TEXTAREA" ? "Проверочная заявка"
       : "Анна";
@@ -677,7 +690,7 @@ async function checkForm(browser, url, index) {
     text: ((await status.textContent().catch(() => "")) || "").trim(),
     state: await status.getAttribute("data-state").catch(() => null),
   });
-  const values = () => form.locator('input:not([type="checkbox"]):not([tabindex="-1"]), textarea').evaluateAll((els) => els.map((el) => el.value));
+  const values = () => form.locator('input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([tabindex="-1"]), textarea').evaluateAll((els) => els.map((el) => el.value));
 
   // 0. Человек ввёл ерунду в поле и сразу жмёт «Отправить»: ошибка под полем появляется при уходе из него
   //    и сдвигает кнопку. Если из-за сдвига нажатие теряется, кнопка «не реагирует».
@@ -773,7 +786,7 @@ const titles = new Map();
 const boxes = new Map();
 
 for (const file of ["robots.txt", "sitemap.xml"]) {
-  const text = await fs.readFile(path.join(ROOT, file), "utf8").catch(() => null);
+  const text = await fs.readFile(path.join(SITE, file), "utf8").catch(() => null);
   if (text === null) error(file, "файла нет");
   else await checkSourceText(file, text);
 }

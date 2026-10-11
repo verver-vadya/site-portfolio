@@ -1,0 +1,29 @@
+---
+import Base from "../layouts/Base.astro";
+import { href } from "../scripts/cases";
+---
+
+<Base title="Страница не найдена · verver" description="Такой страницы нет. Все работы на главной.">
+  <section class="nf wrap">
+    <p class="caps muted">Ошибка 404</p>
+    <h1>Такой страницы нет</h1>
+    <p>Возможно, ссылка устарела. Все работы собраны на главной.</p>
+    <a class="btn" href={href()}>На главную</a>
+  </section>
+</Base>
+
+<style>
+  .nf {
+    display: grid;
+    justify-items: start;
+    gap: var(--s-6);
+    padding-block: var(--s-24);
+    min-height: 60svh;
+  }
+  h1 {
+    font-size: var(--fs-xl);
+    font-weight: 760;
+    line-height: var(--lh-head);
+    text-transform: uppercase;
+  }
+</style>

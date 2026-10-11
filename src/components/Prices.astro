@@ -1,0 +1,253 @@
+---
+// Цены «от» и сроки. Это цены для первых пяти проектов: когда кейсы и отзывы наберутся,
+// поднять цифры и убрать строку prices__first.
+// value совпадает с вариантом «Какой сайт нужен» в форме: «Обсудить» выбирает его.
+const plans = [
+  {
+    value: "Лендинг",
+    name: "Лендинг",
+    price: "от 15 000 ₽",
+    usual: "обычно 15–20 тысяч",
+    fit: "Подходит, если у вас одна услуга, акция или запуск и нужно быстро начать получать заявки.",
+    term: "1–2 недели",
+    items: [
+      "Одна страница под услугу, акцию или запуск",
+      "Заявки в Telegram или на почту",
+      "Вёрстка для компьютера и телефона",
+      "Яндекс Метрика и согласие по 152-ФЗ",
+    ],
+  },
+  {
+    value: "Визитка или портфолио",
+    name: "Сайт-визитка",
+    price: "от 25 000 ₽",
+    usual: "обычно 25–35 тысяч",
+    fit: "Подходит мастерам и небольшим компаниям, которым нужен понятный сайт с услугами и работами.",
+    term: "2–3 недели",
+    items: [
+      "До пяти страниц: услуги, работы, о вас, контакты",
+      "Дизайн под нишу, а не шаблон",
+      "Формы, карта, ссылки на соцсети",
+      "Заголовки и карта сайта для поисковиков",
+    ],
+  },
+  {
+    value: "Сайт с записью или каталогом",
+    name: "Запись или каталог",
+    price: "от 45 000 ₽",
+    usual: "обычно 45–70 тысяч",
+    fit: "Подходит салонам, студиям и магазинам, где клиент выбирает услугу и сразу записывается или покупает.",
+    term: "3–5 недель",
+    items: [
+      "Онлайн-запись через YClients или DIKIDI",
+      "Каталог услуг или товаров с фильтрами",
+      "Оплата через ЮKassa",
+      "Простая админка для текстов и цен",
+    ],
+  },
+];
+---
+
+<section class="prices wrap" id="prices" aria-labelledby="prices-title">
+  <div class="prices__head">
+    <h2 id="prices-title" class="caps">Цены и сроки</h2>
+    <div class="prices__intro">
+      <p class="prices__lede">
+        Точную цену называю после брифа, она не&nbsp;меняется по&nbsp;ходу работы, если не&nbsp;меняется задача.
+      </p>
+      <p class="prices__first">
+        <span class="tag caps">Первые пять проектов</span>
+        Цены ниже обычных, а&nbsp;взамен отзыв и&nbsp;разрешение показать сайт в&nbsp;портфолио.
+      </p>
+    </div>
+  </div>
+  <ul class="prices__grid">
+    {
+      plans.map((p, i) => (
+        <li class="plan">
+          <p class="plan__top caps muted">
+            <span>{String(i + 1).padStart(2, "0")}</span>
+            <span>{p.term}</span>
+          </p>
+          <h3 class="plan__name">{p.name}</h3>
+          <p class="plan__fit muted">{p.fit}</p>
+          <p class="plan__price">
+            {p.price}
+            <span class="plan__usual muted">{p.usual}</span>
+          </p>
+          <ul class="plan__list">
+            {p.items.map((it) => <li>{it}</li>)}
+          </ul>
+          <a class="plan__go caps link" href="#contact" data-pick={p.value}>
+            Обсудить
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+  <ul class="prices__promises">
+    <li>
+      <span class="caps">Гарантия</span>
+      Если прототип главной не&nbsp;понравится, верну предоплату целиком.
+    </li>
+    <li>
+      <span class="caps">Оплата</span>
+      По&nbsp;договору: предоплата 30–50&nbsp;%, остаток после запуска.
+    </li>
+    <li>
+      <span class="caps">Хостинг и&nbsp;домен</span>
+      Покупаются на&nbsp;ваше имя и&nbsp;оплачиваются отдельно, обычно 3–6 тысяч рублей в&nbsp;год.
+    </li>
+  </ul>
+</section>
+
+<style>
+  .prices {
+    padding-block: var(--s-16);
+    border-top: 1px solid var(--c-line);
+    scroll-margin-top: var(--s-4);
+  }
+  .prices__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+    gap: var(--s-6) var(--s-12);
+    margin-bottom: var(--s-8);
+  }
+  .prices__head h2 {
+    font-size: var(--fs-sm);
+  }
+  .prices__intro {
+    display: grid;
+    gap: var(--s-6);
+  }
+  .prices__first {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2) var(--s-3);
+    max-width: 62ch;
+  }
+  .prices__lede {
+    max-width: 30ch;
+    font-size: var(--fs-xl);
+    font-weight: 600;
+    line-height: 1.1;
+    text-wrap: pretty;
+  }
+  .prices__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: var(--s-4);
+  }
+  .plan {
+    display: grid;
+    grid-template-rows: auto auto auto auto 1fr auto;
+    gap: var(--s-4);
+    padding: var(--s-6);
+    border-radius: var(--radius-plate);
+    background: var(--c-plate);
+  }
+  .plan__top {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s-4);
+  }
+  .plan__top span:last-child {
+    color: var(--c-ink);
+  }
+  .plan__name {
+    margin: var(--s-6) 0 0;
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+  .plan__fit {
+    max-width: 40ch;
+    font-size: var(--fs-sm);
+    text-wrap: pretty;
+  }
+  .plan__usual {
+    display: block;
+    margin-top: var(--s-2);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+  .plan__price {
+    font-size: var(--fs-xl);
+    font-weight: 760;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+  .plan__list {
+    display: grid;
+    align-content: start;
+    gap: var(--s-2);
+    padding-top: var(--s-4);
+    border-top: 1.5px solid var(--c-ink);
+    font-size: var(--fs-sm);
+  }
+  .plan__list li {
+    padding-left: var(--s-4);
+    text-indent: calc(var(--s-4) * -1);
+  }
+  .plan__list li::before {
+    content: "—";
+    display: inline-block;
+    width: var(--s-4);
+    text-indent: 0;
+  }
+  .plan__go {
+    display: inline-flex;
+    align-items: center;
+    justify-self: start;
+    gap: var(--s-2);
+    min-height: 44px;
+    margin-top: var(--s-2);
+    text-decoration: none;
+  }
+  .plan__go svg {
+    width: 16px;
+    height: 16px;
+    transition: transform var(--d-fast) var(--ease-out);
+  }
+  @media (hover: hover) {
+    .plan__go:hover svg {
+      transform: translateX(3px);
+    }
+  }
+  .prices__promises {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: var(--s-4);
+    margin-top: var(--s-6);
+    font-size: var(--fs-sm);
+  }
+  .prices__promises li {
+    display: grid;
+    gap: var(--s-1);
+    align-content: start;
+    padding-top: var(--s-3);
+    border-top: 1.5px solid var(--c-ink);
+  }
+
+  @media (max-width: 720px) {
+    .prices__head {
+      grid-template-columns: 1fr;
+    }
+    .plan {
+      padding: var(--s-4);
+    }
+    .plan__name {
+      margin-top: var(--s-2);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .plan__go svg {
+      transition: none;
+    }
+  }
+</style>

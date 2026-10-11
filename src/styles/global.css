@@ -1,0 +1,307 @@
+/* Токены: все цвета, размеры, отступы и движение задаются здесь */
+@font-face {
+  font-family: "Sofia Sans Condensed";
+  src: url("../assets/fonts/sofia-sans-condensed-cyrillic-wght-normal.woff2") format("woff2");
+  font-weight: 1 1000;
+  font-display: swap;
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: "Sofia Sans Condensed";
+  src: url("../assets/fonts/sofia-sans-condensed-latin-wght-normal.woff2") format("woff2");
+  font-weight: 1 1000;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Pixelify Sans";
+  src: url("../assets/fonts/pixelify-sans-latin-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+2000-206F;
+}
+@font-face {
+  font-family: "Pixelify Sans";
+  src: url("../assets/fonts/pixelify-sans-cyrillic-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+:root {
+  /* цвет: чёрно-белая основа, серые плашки под работы */
+  --c-paper: #ffffff;
+  --c-ink: #111111;
+  --c-muted: #686866; /* 5,6:1 на белом */
+  --c-plate: #eeeeec;
+  --c-line: #dcdcd8;
+  --c-hover: #f4f4f2;
+  --c-focus: #111111;
+  --c-field: #8c8c88; /* рамка поля, 3,4:1 на белом */
+  --c-danger: #b3261e;
+  --c-success: #1d6b3a;
+
+  /* шрифты */
+  --font-text: "Sofia Sans Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-mark: "Pixelify Sans", var(--font-text);
+
+  /* размеры шрифта: 13 / 15 / 18 / 24 / 36–56 / 56–168 */
+  --fs-xs: 0.8125rem;
+  --fs-sm: 0.9375rem;
+  --fs-md: 1.125rem;
+  --fs-lg: 1.5rem;
+  --fs-xl: clamp(2.25rem, 1.4rem + 2.6vw, 3.5rem);
+  --fs-2xl: clamp(3.5rem, 1.2rem + 9vw, 10.5rem);
+  --lh-text: 1.5;
+  --lh-head: 1.05;
+  --caps-spacing: 0.04em;
+
+  /* отступы: шаг 4 px */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-12: 48px;
+  --s-16: 64px;
+  --s-24: 96px;
+  --gutter: clamp(16px, 2.8vw, 48px);
+  --max: clamp(1760px, 86vw, 2240px);
+  --header-h: 64px;
+
+  --radius-plate: 6px;
+  --radius-pill: 999px;
+  --shadow-shot: 0 1px 2px rgb(0 0 0 / 0.06), 0 16px 40px -18px rgb(0 0 0 / 0.35);
+
+  /* движение */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* только мелочи до 200 мс */
+  --ease-soft: cubic-bezier(0.45, 0, 0.2, 1); /* наведение на крупное */
+  --ease-turn: cubic-bezier(0.35, 0, 0.15, 1); /* поворот кольца */
+  --d-fast: 180ms;
+  --d-soft: 600ms;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* на больших экранах текст растёт: 16 px до 1440, 20 px к 2560 */
+  font-size: clamp(16px, 0.357vw + 10.86px, 20px);
+  -webkit-text-size-adjust: 100%;
+  scrollbar-gutter: stable;
+}
+
+body {
+  margin: 0;
+  background: var(--c-paper);
+  color: var(--c-ink);
+  font-family: var(--font-text);
+  font-size: var(--fs-md);
+  line-height: var(--lh-text);
+  font-weight: 420;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+p,
+dl,
+dd,
+ul {
+  margin: 0;
+}
+
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 3px;
+}
+
+.skip {
+  position: absolute;
+  left: var(--gutter);
+  top: var(--s-2);
+  z-index: 10;
+  padding: var(--s-2) var(--s-4);
+  background: var(--c-ink);
+  color: var(--c-paper);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip:focus {
+  transform: none;
+}
+
+.wrap {
+  width: 100%;
+  max-width: var(--max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* подписи капслоком, как бирки на вещах */
+.caps {
+  font-size: var(--fs-xs);
+  font-weight: 560;
+  letter-spacing: var(--caps-spacing);
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+.muted {
+  color: var(--c-muted);
+}
+
+/* ссылка-подпись: подчёркивание проявляется */
+.link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: transparent;
+  transition: text-decoration-color var(--d-fast) var(--ease-out), opacity var(--d-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .link:hover {
+    text-decoration-color: currentColor;
+  }
+}
+.link:active {
+  opacity: 0.6;
+}
+
+/* бирка «Концепт» */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding-inline: var(--s-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-pill);
+}
+
+/* переключатель ПК / Телефон */
+.switch {
+  display: inline-flex;
+  padding: 2px;
+  border: 1.5px solid var(--c-ink);
+  border-radius: var(--radius-pill);
+}
+.switch button {
+  min-height: 44px;
+  min-width: 96px;
+  padding-inline: var(--s-4);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--c-ink);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out),
+    transform var(--d-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .switch button:hover {
+    background: var(--c-hover);
+  }
+  .switch button[aria-pressed="true"]:hover {
+    background: #333333;
+  }
+}
+.switch button:active {
+  transform: scale(0.97);
+}
+.switch button[aria-pressed="true"] {
+  background: var(--c-ink);
+  color: var(--c-paper);
+}
+.switch button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* круглые кнопки со стрелками */
+.round {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1.5px solid var(--c-ink);
+  border-radius: 50%;
+  background: var(--c-paper);
+  color: var(--c-ink);
+  cursor: pointer;
+  transition: background-color var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out),
+    transform var(--d-fast) var(--ease-out);
+}
+.round svg {
+  width: 20px;
+  height: 20px;
+}
+@media (hover: hover) {
+  .round:hover {
+    background: var(--c-ink);
+    color: var(--c-paper);
+  }
+}
+.round:active {
+  transform: scale(0.94);
+}
+.round:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* главная кнопка: одна на экран */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 48px;
+  padding-inline: var(--s-6);
+  border: 1.5px solid var(--c-ink);
+  border-radius: var(--radius-pill);
+  background: var(--c-ink);
+  color: var(--c-paper);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out),
+    transform var(--d-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .btn:hover {
+    background: var(--c-paper);
+    color: var(--c-ink);
+  }
+}
+.btn:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch button,
+  .round,
+  .btn {
+    transition-property: background-color, color;
+  }
+}

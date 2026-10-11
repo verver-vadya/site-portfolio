@@ -1,0 +1,145 @@
+---
+// Вопросы и ответы: что нужно от клиента, правки, на кого оформлено, цена и оплата, что после запуска.
+const items = [
+  {
+    q: "Что нужно от вас",
+    a: "Ответить на вопросы брифа, это минут пятнадцать, и прислать фото работ, если они есть. Тексты напишу сам по вашим ответам, вы их только поправите. Если сайт держится на картинках, как у салонов и мастеров, посоветую сделать съёмку: она сильнее всего влияет на вид сайта.",
+  },
+  {
+    q: "Сколько будет правок",
+    a: "Два-три круга на каждом этапе: после прототипа главной и после сборки всего сайта. Вы смотрите живую ссылку на компьютере и телефоне и присылаете замечания списком.",
+  },
+  {
+    q: "На кого оформлены сайт, хостинг и домен",
+    a: "На вас. Хостинг и домен вы покупаете на своё имя, я помогаю по шагам. После запуска передаю код и доступы, вы меняете пароли. Сайт не привязан ко мне.",
+  },
+  {
+    q: "От чего зависит цена",
+    a: "От количества страниц, от того, есть ли у вас тексты и фото, и от того, нужны ли запись, каталог или оплата на сайте. Лендинг с готовыми текстами и фото ближе к нижней границе, сайт с записью и админкой ближе к верхней.",
+  },
+  {
+    q: "Почему нельзя сразу назвать точную цену",
+    a: "До брифа непонятен объём: сколько страниц, кто пишет тексты, нужна ли запись. После брифа называю точную цену, она попадает в договор и дальше не меняется, если не меняется задача.",
+  },
+  {
+    q: "Как проходит оплата",
+    a: "Договор и предоплата 30–50 % перед началом, остаток после запуска. Первым делом я делаю прототип главной. Если он не понравится, верну предоплату целиком, и мы спокойно разойдёмся.",
+  },
+  {
+    q: "Что будет после запуска",
+    a: "Две недели бесплатно исправляю всё, что всплывёт. Дальше по желанию поддержка: правки текстов и цен, новые страницы, обновления. Или обновляете сами: для текстов и цен делаю простую админку или пишу инструкцию.",
+  },
+  {
+    q: "У меня уже есть сайт",
+    a: "Посмотрю, что в нём работает, а что мешает заявкам. Иногда хватает новой главной и нормальной формы, тогда так и скажу.",
+  },
+];
+---
+
+<section class="faq wrap" id="faq" aria-labelledby="faq-title">
+  <h2 id="faq-title" class="caps">Вопросы</h2>
+  <div class="faq__list">
+    {
+      items.map((it) => (
+        <details class="faq__item">
+          <summary>
+            <span>{it.q}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          </summary>
+          <p>{it.a}</p>
+        </details>
+      ))
+    }
+  </div>
+</section>
+
+<style>
+  .faq {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+    gap: var(--s-6) var(--s-12);
+    padding-block: var(--s-16);
+    border-top: 1px solid var(--c-line);
+    scroll-margin-top: var(--s-4);
+  }
+  .faq h2 {
+    font-size: var(--fs-sm);
+  }
+  .faq__list {
+    border-top: 1.5px solid var(--c-ink);
+  }
+  .faq__item {
+    border-bottom: 1px solid var(--c-line);
+  }
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    min-height: 64px;
+    padding-block: var(--s-4);
+    font-size: var(--fs-lg);
+    font-weight: 650;
+    line-height: 1.15;
+    list-style: none;
+    cursor: pointer;
+    transition: opacity var(--d-fast) var(--ease-out);
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary:active {
+    opacity: 0.6;
+  }
+  summary svg {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    transition: transform 250ms var(--ease-soft);
+  }
+  @media (hover: hover) {
+    summary:hover svg {
+      transform: rotate(90deg);
+    }
+  }
+  .faq__item[open] summary svg {
+    transform: rotate(45deg);
+  }
+  .faq__item p {
+    max-width: 62ch;
+    padding-bottom: var(--s-6);
+    text-wrap: pretty;
+  }
+  /* ответ проявляется после раскрытия, без анимации высоты */
+  .faq__item[open] p {
+    animation: faq-in 450ms var(--ease-soft) both;
+  }
+  @keyframes faq-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
+
+  @media (max-width: 720px) {
+    .faq {
+      grid-template-columns: 1fr;
+    }
+    summary {
+      font-size: var(--fs-md);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    summary svg {
+      transition: none;
+    }
+    .faq__item[open] p {
+      animation: faq-fade 220ms ease-out both;
+    }
+    @keyframes faq-fade {
+      from {
+        opacity: 0;
+      }
+    }
+  }
+</style>
