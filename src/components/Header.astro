@@ -15,8 +15,12 @@ const items = [
 });
 ---
 
-<header class="header wrap">
-  <a class="mark" href={home} aria-label="verver, на главную">verver</a>
+<header class="header" data-header>
+  <div class="header__in wrap">
+  <a class="mark" href={home} aria-label="verver, на главную">{
+    // буквы по отдельности: при приветствии знак собирается вразнобой
+    "verver".split("").map((c, i) => <span style={`--d: ${[140, 0, 280, 70, 350, 210][i]}`}>{c}</span>)
+  }</a>
   <nav aria-label="Разделы">
     <ul class="caps">
       {
@@ -30,10 +34,37 @@ const items = [
       }
     </ul>
   </nav>
+  </div>
 </header>
 
 <style>
+  /* Шапка прилипает к верху: при прокрутке вниз уезжает, при прокрутке вверх возвращается */
   .header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--c-paper);
+    transition: transform 320ms var(--ease-soft), box-shadow var(--d-fast) var(--ease-out);
+  }
+  /* когда шапка вернулась посреди страницы, под ней тонкая линия */
+  .header.is-floating {
+    box-shadow: 0 1px 0 var(--c-line);
+  }
+  .header.is-hidden:not(:focus-within) {
+    transform: translateY(-100%);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    /* без движения шапка просто растворяется на месте */
+    .header {
+      transition: opacity 200ms var(--ease-out), visibility 200ms;
+    }
+    .header.is-hidden:not(:focus-within) {
+      transform: none;
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+  .header__in {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -80,3 +111,38 @@ const items = [
     }
   }
 </style>
+
+<script>
+  // Прячем шапку, только когда человек листает вниз ниже её высоты; лёгкая прокрутка вверх возвращает
+  const header = document.querySelector<HTMLElement>("[data-header]");
+  if (header) {
+    let last = Math.max(0, scrollY);
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const max = document.documentElement.scrollHeight - innerHeight;
+      const y = Math.min(Math.max(0, scrollY), max); // без отскока iOS у краёв
+      const dy = y - last;
+      const h = header.offsetHeight;
+      if (y <= h) {
+        header.classList.remove("is-hidden", "is-floating");
+      } else if (dy > 6) {
+        header.classList.add("is-hidden");
+      } else if (dy < -6) {
+        header.classList.remove("is-hidden");
+        header.classList.add("is-floating");
+      } else return; // мелкое дрожание пальца не считаем
+      last = y;
+    };
+    addEventListener(
+      "scroll",
+      () => {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(update);
+        }
+      },
+      { passive: true }
+    );
+  }
+</script>

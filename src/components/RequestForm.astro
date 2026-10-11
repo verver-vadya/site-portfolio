@@ -15,7 +15,38 @@ const budgets = ["До 20 000 ₽", "20–40 тысяч ₽", "40–70 тыся�
 ---
 
 <section class="contact wrap" id="contact" aria-labelledby="contact-title">
-  <H id="contact-title" class="caps">Заявка</H>
+  {
+    Astro.props.level === 1 && (
+      <Fragment>
+        <a class="contact__back caps link" href={href()} hidden data-back data-base={href()}>
+          ← Назад
+        </a>
+        <script is:inline>
+          // «← Назад» показываем сразу при разборе страницы (без сдвига формы), если пришли с другой страницы сайта.
+          // Подпись говорит, куда вернёмся; нажатие идёт по истории, чтобы страница открылась на том же месте.
+          (function () {
+            var link = document.currentScript.previousElementSibling;
+            var base = link.dataset.base;
+            var from;
+            try { from = new URL(document.referrer); } catch (e) { return; }
+            if (from.origin !== location.origin || from.pathname.indexOf(base) !== 0 || from.pathname === location.pathname) return;
+            var path = from.pathname.slice(base.length);
+            var where = path === "" || path === "index.html" ? " на главную"
+              : path.indexOf("works/") === 0 ? " к работам"
+              : path.indexOf("cases/") === 0 ? " к работе"
+              : path.indexOf("prices/") === 0 ? " к ценам" : "";
+            link.textContent = "← Назад" + where;
+            link.href = from.href;
+            link.hidden = false;
+            link.addEventListener("click", function (e) {
+              if (history.length > 1) { e.preventDefault(); history.back(); }
+            });
+          })();
+        </script>
+      </Fragment>
+    )
+  }
+  <H id="contact-title" class="contact__title caps">Заявка</H>
   <div class="contact__body">
     <div class="contact__intro">
       <p class="contact__lead">Расскажите о&nbsp;задаче</p>
@@ -135,8 +166,20 @@ const budgets = ["До 20 000 ₽", "20–40 тысяч ₽", "40–70 тыся�
     border-top: 1px solid var(--c-line);
     scroll-margin-top: var(--s-4);
   }
-  .contact > .caps:first-child {
+  .contact__title {
     font-size: var(--fs-sm);
+  }
+  /* «Назад» видна, только если человек пришёл на заявку с другой страницы сайта */
+  .contact__back {
+    grid-column: 1 / -1;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-block: calc(var(--s-3) * -1) calc(var(--s-2) * -1);
+  }
+  .contact__back[hidden] {
+    display: none;
   }
   .contact__body {
     display: grid;
@@ -257,7 +300,7 @@ const budgets = ["До 20 000 ₽", "20–40 тысяч ₽", "40–70 тыся�
       border-color: var(--c-ink);
     }
     .choice__item:has(input:checked):hover {
-      background: #333;
+      background: var(--c-press);
     }
   }
   .choice__item:active {

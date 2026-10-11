@@ -8,8 +8,9 @@ interface Props {
   title: string;
   description: string;
   image?: string;
+  intro?: boolean; // приветствие при первом открытии (только главная)
 }
-const { title, description, image } = Astro.props;
+const { title, description, image, intro = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const og = new URL(image ?? href("og.jpg"), Astro.site);
 ---
@@ -23,13 +24,39 @@ const og = new URL(image ?? href("og.jpg"), Astro.site);
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     <link rel="icon" href={href("favicon.svg")} type="image/svg+xml" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)" />
+    <script is:inline>
+      // Тема, выбранная переключателем внизу страницы, ставится до отрисовки, чтобы не мигало
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.dataset.theme = t;
+          document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
+            m.content = t === "dark" ? "#111111" : "#ffffff";
+          });
+        }
+      } catch (e) {}
+    </script>
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="ru_RU" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={og} />
+    {
+      intro && (
+        <script is:inline>
+          // Приветствие: один раз за визит и только если в системе не выключены анимации
+          try {
+            if (!matchMedia("(prefers-reduced-motion: reduce)").matches && !sessionStorage.getItem("intro")) {
+              document.documentElement.classList.add("is-intro");
+              sessionStorage.setItem("intro", "1");
+            }
+          } catch (e) {}
+        </script>
+      )
+    }
   </head>
   <body>
     <a class="skip" href="#main">Перейти к содержимому</a>
