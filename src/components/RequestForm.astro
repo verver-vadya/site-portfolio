@@ -1,6 +1,6 @@
 ---
 // Заявка: четыре вопроса брифа, согласие по 152-ФЗ и запасной путь — Telegram и почта.
-// Заявки уходят в Formspree: вместо YOUR_FORM_ID поставить номер формы (см. README).
+// Заявки уходят в Formspree: номер формы задаётся в src/site.ts (см. README).
 import { href } from "../scripts/cases";
 import { owner } from "../site";
 import Me from "./Me.astro";
@@ -25,7 +25,7 @@ const budgets = ["До 20 000 ₽", "20–40 тысяч ₽", "40–70 тыся�
       </div>
     </div>
 
-    <form class="form" action="https://formspree.io/f/YOUR_FORM_ID" method="post" data-form>
+    <form class="form" action={`https://formspree.io/f/${owner.formspree}`} method="post" data-form>
       <input type="hidden" name="_subject" value="Заявка с сайта-портфолио" />
 
       <div class="field">
