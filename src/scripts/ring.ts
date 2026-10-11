@@ -273,14 +273,14 @@ export function initRing(ring: HTMLElement) {
   // кольцо пересчитывает радиус само (через CSS), здесь только перерисовать
   addEventListener("resize", render, { passive: true });
 
-  // ---- вход: кольцо доезжает до первой работы ----
+  // ---- вход: при приветствии кольцо въезжает и доезжает до первой работы ----
   render();
-  if (!reduce.matches) {
+  if (!reduce.matches && document.documentElement.classList.contains("is-intro")) {
     angle = home + step * 2.5;
     render();
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       turnTo(home, INTRO_MS);
       pause(INTRO_MS + 1200);
-    });
-  }
+    }, 200);
+  } else pause(1500);
 }

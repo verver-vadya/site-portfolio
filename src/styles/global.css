@@ -38,8 +38,10 @@
   --c-hover: #f4f4f2;
   --c-focus: #111111;
   --c-field: #8c8c88; /* рамка поля, 3,4:1 на белом */
+  --c-press: #333333; /* наведение на нажатую кнопку */
   --c-danger: #b3261e;
   --c-success: #1d6b3a;
+  color-scheme: light;
 
   /* шрифты */
   --font-text: "Sofia Sans Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
@@ -80,6 +82,47 @@
   --ease-turn: cubic-bezier(0.35, 0, 0.15, 1); /* поворот кольца */
   --d-fast: 180ms;
   --d-soft: 600ms;
+}
+
+/* Тёмная тема: по системе, если человек не выбрал тему сам переключателем внизу страницы.
+   Скриншоты работ не меняются, темнеют только фон, текст, плашки и линии. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --c-paper: #111111;
+    --c-ink: #ededeb;
+    --c-muted: #9c9c98; /* 6,9:1 на тёмном */
+    --c-plate: #1e1e1d;
+    --c-line: #2e2e2c;
+    --c-hover: #1a1a19;
+    --c-focus: #ededeb;
+    --c-field: #73736f; /* 3,6:1 на тёмном */
+    --c-press: #c8c8c5;
+    --c-danger: #ff8a80;
+    --c-success: #6fcf97;
+    --shadow-shot: 0 1px 2px rgb(0 0 0 / 0.3), 0 16px 40px -18px rgb(0 0 0 / 0.8);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --c-paper: #111111;
+  --c-ink: #ededeb;
+  --c-muted: #9c9c98;
+  --c-plate: #1e1e1d;
+  --c-line: #2e2e2c;
+  --c-hover: #1a1a19;
+  --c-focus: #ededeb;
+  --c-field: #73736f;
+  --c-press: #c8c8c5;
+  --c-danger: #ff8a80;
+  --c-success: #6fcf97;
+  --shadow-shot: 0 1px 2px rgb(0 0 0 / 0.3), 0 16px 40px -18px rgb(0 0 0 / 0.8);
+  color-scheme: dark;
+}
+/* при смене темы цвета меняются сразу, без растянутых переходов у кнопок */
+.is-theme-switching *,
+.is-theme-switching *::before,
+.is-theme-switching *::after {
+  transition: none !important;
 }
 
 *,
@@ -225,7 +268,7 @@ ul {
     background: var(--c-hover);
   }
   .switch button[aria-pressed="true"]:hover {
-    background: #333333;
+    background: var(--c-press);
   }
 }
 .switch button:active {
@@ -310,4 +353,39 @@ ul {
 #main > section:first-child:not(.hero) {
   border-top: 0;
   padding-top: var(--s-8);
+}
+
+/* Приветствие на главной (класс is-intro ставит Base один раз за визит, без анимаций в системе его нет).
+   Знак собирается вразнобой с пиксельным миганием, заголовок поднимается, кольцо въезжает.
+   Анимируются только opacity и transform, страницу можно листать и нажимать сразу. */
+.is-intro .mark span {
+  animation: intro-pixel 420ms steps(1, end) both;
+  animation-delay: calc(var(--d) * 1ms);
+}
+.is-intro .header nav {
+  animation: intro-rise 450ms var(--ease-soft) 300ms both;
+}
+.is-intro .hero__title {
+  animation: intro-rise 550ms var(--ease-soft) 120ms both;
+}
+.is-intro .hero__lede {
+  animation: intro-rise 550ms var(--ease-soft) 240ms both;
+}
+.is-intro .hero__ring {
+  animation: intro-ring 800ms var(--ease-soft) 200ms both;
+}
+.is-intro .hero__bar {
+  animation: intro-rise 500ms var(--ease-soft) 600ms both;
+}
+@keyframes intro-pixel {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  55% { opacity: 0.2; }
+  75% { opacity: 1; }
+}
+@keyframes intro-rise {
+  from { opacity: 0; transform: translateY(14px); }
+}
+@keyframes intro-ring {
+  from { opacity: 0; transform: translateY(28px) scale(0.98); }
 }
