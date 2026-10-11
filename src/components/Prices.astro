@@ -1,11 +1,12 @@
 ---
-// Цены «от» и сроки. Цифры — стартовые, точная цена после брифа.
+// Цены «от» и сроки. Это цены для первых пяти проектов: когда кейсы и отзывы наберутся,
+// поднять цифры и убрать строку prices__first.
 // value совпадает с вариантом «Какой сайт нужен» в форме: «Обсудить» выбирает его.
 const plans = [
   {
     value: "Лендинг",
     name: "Лендинг",
-    price: "от 25 000 ₽",
+    price: "от 15 000 ₽",
     term: "1–2 недели",
     items: [
       "Одна страница под услугу, акцию или запуск",
@@ -17,7 +18,7 @@ const plans = [
   {
     value: "Визитка или портфолио",
     name: "Сайт-визитка",
-    price: "от 40 000 ₽",
+    price: "от 25 000 ₽",
     term: "2–3 недели",
     items: [
       "До пяти страниц: услуги, работы, о вас, контакты",
@@ -29,7 +30,7 @@ const plans = [
   {
     value: "Сайт с записью или каталогом",
     name: "Запись или каталог",
-    price: "от 70 000 ₽",
+    price: "от 45 000 ₽",
     term: "3–5 недель",
     items: [
       "Онлайн-запись через YClients или DIKIDI",
@@ -44,9 +45,15 @@ const plans = [
 <section class="prices wrap" id="prices" aria-labelledby="prices-title">
   <div class="prices__head">
     <h2 id="prices-title" class="caps">Цены и сроки</h2>
-    <p class="prices__lede">
-      Точную цену называю после брифа, она не&nbsp;меняется по&nbsp;ходу работы, если не&nbsp;меняется задача.
-    </p>
+    <div class="prices__intro">
+      <p class="prices__lede">
+        Точную цену называю после брифа, она не&nbsp;меняется по&nbsp;ходу работы, если не&nbsp;меняется задача.
+      </p>
+      <p class="prices__first">
+        <span class="tag caps">Первые пять проектов</span>
+        Цены ниже обычных, а&nbsp;взамен отзыв и&nbsp;разрешение показать сайт в&nbsp;портфолио.
+      </p>
+    </div>
   </div>
   <ul class="prices__grid">
     {
@@ -89,6 +96,17 @@ const plans = [
   }
   .prices__head h2 {
     font-size: var(--fs-sm);
+  }
+  .prices__intro {
+    display: grid;
+    gap: var(--s-6);
+  }
+  .prices__first {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2) var(--s-3);
+    max-width: 62ch;
   }
   .prices__lede {
     max-width: 30ch;
