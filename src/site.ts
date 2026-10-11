@@ -7,5 +7,5 @@ export const owner = {
   status: "самозанятый", // или «ИП»
   inn: "511702630968",
   telegram: "notverver", // без @
-  email: "vadik32140@gmail.com",
+  email: "verver.company@mail.ru",
 };
