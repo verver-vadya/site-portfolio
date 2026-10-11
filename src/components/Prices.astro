@@ -1,7 +1,16 @@
 ---
+import { href } from "../scripts/cases";
+
+interface Props {
+  level?: 1 | 2;
+}
+const H = Astro.props.level === 1 ? "h1" : "h2";
+const Hplan = Astro.props.level === 1 ? "h2" : "h3";
+
 // Цены «от» и сроки. Это цены для первых пяти проектов: когда кейсы и отзывы наберутся,
 // поднять цифры и убрать строку prices__first.
-// value совпадает с вариантом «Какой сайт нужен» в форме: «Обсудить» выбирает его.
+// value совпадает с вариантом «Какой сайт нужен» в форме: «Обсудить» открывает заявку с ним.
+// level: 1 на странице «Цены», 2 если блок стоит внутри другой страницы.
 const plans = [
   {
     value: "Лендинг",
@@ -50,7 +59,7 @@ const plans = [
 
 <section class="prices wrap" id="prices" aria-labelledby="prices-title">
   <div class="prices__head">
-    <h2 id="prices-title" class="caps">Цены и сроки</h2>
+    <H id="prices-title" class="caps">Цены и сроки</H>
     <div class="prices__intro">
       <p class="prices__lede">
         Точную цену называю после брифа, она не&nbsp;меняется по&nbsp;ходу работы, если не&nbsp;меняется задача.
@@ -69,7 +78,7 @@ const plans = [
             <span>{String(i + 1).padStart(2, "0")}</span>
             <span>{p.term}</span>
           </p>
-          <h3 class="plan__name">{p.name}</h3>
+          <Hplan class="plan__name">{p.name}</Hplan>
           <p class="plan__fit muted">{p.fit}</p>
           <p class="plan__price">
             {p.price}
@@ -78,7 +87,7 @@ const plans = [
           <ul class="plan__list">
             {p.items.map((it) => <li>{it}</li>)}
           </ul>
-          <a class="plan__go caps link" href="#contact" data-pick={p.value}>
+          <a class="plan__go caps link" href={href(`contact/?type=${encodeURIComponent(p.value)}`)}>
             Обсудить
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
           </a>
@@ -114,7 +123,7 @@ const plans = [
     gap: var(--s-6) var(--s-12);
     margin-bottom: var(--s-8);
   }
-  .prices__head h2 {
+  .prices__head .caps:first-child {
     font-size: var(--fs-sm);
   }
   .prices__intro {

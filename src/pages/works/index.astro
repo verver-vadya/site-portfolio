@@ -1,0 +1,10 @@
+---
+import Base from "../../layouts/Base.astro";
+import Works from "../../components/Works.astro";
+import Cta from "../../components/Cta.astro";
+---
+
+<Base title="Работы · verver" description="Сайты, которые я сделал: задача, решение, скриншоты на компьютере и телефоне.">
+  <Works level={1} />
+  <Cta links={[{ label: "Цены и сроки", to: "prices/" }, { label: "Обо мне", to: "about/" }]} />
+</Base>

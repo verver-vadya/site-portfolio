@@ -208,11 +208,12 @@ function initForm(form: HTMLFormElement) {
 document.querySelectorAll<HTMLFormElement>("form[data-form]").forEach(initForm);
 
 // «Обсудить» у цены: выбирает тип сайта в форме
-document.querySelectorAll<HTMLAnchorElement>("[data-pick]").forEach((a) =>
-  a.addEventListener("click", () => {
-    const radio = document.querySelector<HTMLInputElement>(`input[type="radio"][value="${a.dataset.pick}"]`);
-    if (!radio) return;
+// «Обсудить» в ценах открывает заявку с ?type=…: сразу отмечаем этот тип сайта
+const picked = new URLSearchParams(location.search).get("type");
+if (picked) {
+  const radio = document.querySelector<HTMLInputElement>(`input[type="radio"][value="${CSS.escape(picked)}"]`);
+  if (radio) {
     radio.checked = true;
     radio.dispatchEvent(new Event("change", { bubbles: true }));
-  })
-);
+  }
+}

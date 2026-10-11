@@ -305,3 +305,9 @@ ul {
     transition-property: background-color, color;
   }
 }
+
+/* первый раздел внутренней страницы (Работы, Цены, Обо мне, Заявка): без линии сверху и ближе к шапке */
+#main > section:first-child:not(.hero) {
+  border-top: 0;
+  padding-top: var(--s-8);
+}

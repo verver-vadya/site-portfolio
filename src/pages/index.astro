@@ -1,12 +1,9 @@
 ---
 import Base from "../layouts/Base.astro";
 import Ring from "../components/Ring.astro";
-import CaseCard from "../components/CaseCard.astro";
-import Prices from "../components/Prices.astro";
-import Faq from "../components/Faq.astro";
-import RequestForm from "../components/RequestForm.astro";
+import Works from "../components/Works.astro";
+import Cta from "../components/Cta.astro";
 import { getCases } from "../scripts/cases";
-import { owner } from "../site";
 
 const cases = await getCases();
 ---
@@ -25,39 +22,8 @@ const cases = await getCases();
     <Ring cases={cases} />
   </section>
 
-  <section class="works wrap" id="works" data-view="desktop" aria-labelledby="works-title">
-    <div class="works__head">
-      <h2 id="works-title" class="caps">Работы <span class="muted">({cases.length})</span></h2>
-      <div class="switch caps" role="group" aria-label="Какой экран показать">
-        <button type="button" aria-pressed="true" data-view-btn="desktop">Компьютер</button>
-        <button type="button" aria-pressed="false" data-view-btn="phone">Телефон</button>
-      </div>
-    </div>
-    <ul class="works__grid">
-      {cases.map((c, i) => <li><CaseCard entry={c} index={i} /></li>)}
-    </ul>
-  </section>
-
-  <section class="about wrap" id="about" aria-labelledby="about-title">
-    <h2 id="about-title" class="caps">Обо мне</h2>
-    <div class="about__body">
-      <p class="about__lead">
-        Меня зовут {owner.name}. Делаю сайты для небольших компаний и мастеров: от&nbsp;первого разговора
-        до&nbsp;сайта, который работает на&nbsp;вашем хостинге и&nbsp;приводит заявки.
-      </p>
-      <dl class="about__list">
-        <div><dt class="caps muted">Начало</dt><dd>Бриф, примеры, прототип главной за&nbsp;несколько дней</dd></div>
-        <div><dt class="caps muted">Сайт</dt><dd>Дизайн под нишу, вёрстка для компьютера и&nbsp;телефона</dd></div>
-        <div><dt class="caps muted">Заявки</dt><dd>Формы, онлайн-запись, оплата через ЮKassa</dd></div>
-        <div><dt class="caps muted">Запуск</dt><dd>Хостинг и&nbsp;домен на&nbsp;ваше имя, Яндекс Метрика, 152-ФЗ</dd></div>
-        <div><dt class="caps muted">После</dt><dd>Две недели бесплатных правок, потом поддержка по&nbsp;договорённости</dd></div>
-      </dl>
-    </div>
-  </section>
-
-  <Prices />
-  <Faq />
-  <RequestForm />
+  <Works />
+  <Cta links={[{ label: "Цены и сроки", to: "prices/" }, { label: "Обо мне", to: "about/" }]} />
 </Base>
 
 <style>
@@ -90,70 +56,6 @@ const cases = await getCases();
     font-size: var(--fs-md);
   }
 
-  .works {
-    padding-block: var(--s-16) var(--s-24);
-    scroll-margin-top: var(--s-4);
-  }
-  .works__head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: var(--s-4);
-    margin-bottom: var(--s-6);
-  }
-  .works__head h2 {
-    font-size: var(--fs-sm);
-  }
-  .works__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
-    gap: var(--s-12) var(--s-6);
-  }
-  @media (min-width: 1700px) {
-    .works__grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
-  .about {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
-    gap: var(--s-6) var(--s-12);
-    padding-block: var(--s-16);
-    border-top: 1px solid var(--c-line);
-    scroll-margin-top: var(--s-4);
-  }
-  .about h2 {
-    font-size: var(--fs-sm);
-  }
-  .about__body {
-    display: grid;
-    gap: var(--s-12);
-  }
-  .about__lead {
-    max-width: 30ch;
-    font-size: var(--fs-xl);
-    font-weight: 600;
-    line-height: 1.1;
-    text-wrap: pretty;
-  }
-  .about__list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
-    gap: var(--s-6);
-  }
-  .about__list div {
-    display: grid;
-    gap: var(--s-2);
-    align-content: start;
-    padding-top: var(--s-3);
-    border-top: 1.5px solid var(--c-ink);
-  }
-  .about__list dd {
-    max-width: 30ch;
-  }
-
   @media (max-width: 720px) {
     .hero {
       min-height: calc(100svh - var(--header-h));
@@ -166,21 +68,5 @@ const cases = await getCases();
       justify-self: start;
       font-size: var(--fs-sm);
     }
-    .about {
-      grid-template-columns: 1fr;
-    }
   }
 </style>
-
-<script>
-  // Компьютер / Телефон: меняет скриншоты у всех работ
-  const works = document.querySelector<HTMLElement>(".works");
-  const btns = [...document.querySelectorAll<HTMLButtonElement>("[data-view-btn]")];
-  btns.forEach((b) =>
-    b.addEventListener("click", () => {
-      if (!works) return;
-      works.dataset.view = b.dataset.viewBtn;
-      btns.forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-    })
-  );
-</script>
