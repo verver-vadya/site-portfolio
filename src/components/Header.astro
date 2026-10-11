@@ -10,7 +10,8 @@ const to = (id: string) => (isHome ? `#${id}` : `${home}#${id}`);
   <nav aria-label="Разделы">
     <ul class="caps">
       <li><a class="link" href={to("works")}>Работы</a></li>
-      <li><a class="link" href={to("about")}>Обо мне</a></li>
+      <li><a class="link" href={to("prices")}>Цены</a></li>
+      <li class="nav__about"><a class="link" href={to("about")}>Обо мне</a></li>
       <li><a class="link" href={to("contact")}>Связаться</a></li>
     </ul>
   </nav>
@@ -45,13 +46,18 @@ const to = (id: string) => (isHome ? `#${id}` : `${home}#${id}`);
   }
   ul a {
     display: inline-flex;
+    white-space: nowrap;
     align-items: center;
     min-height: 44px;
     text-decoration-color: transparent;
   }
-  @media (max-width: 380px) {
+  @media (max-width: 360px) {
     ul {
-      gap: var(--s-3);
+      gap: var(--s-4);
+    }
+    /* на узком телефоне четыре пункта не влезают: «Обо мне» рядом, его видно при прокрутке */
+    .nav__about {
+      display: none;
     }
   }
 </style>

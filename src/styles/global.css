@@ -37,6 +37,9 @@
   --c-line: #dcdcd8;
   --c-hover: #f4f4f2;
   --c-focus: #111111;
+  --c-field: #8c8c88; /* рамка поля, 3,4:1 на белом */
+  --c-danger: #b3261e;
+  --c-success: #1d6b3a;
 
   /* шрифты */
   --font-text: "Sofia Sans Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;

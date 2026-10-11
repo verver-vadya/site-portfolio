@@ -322,6 +322,8 @@ async function revealAll(page) {
 function scanOverlap(scope) {
   // Скрытое визуально (в том числе .visually-hidden для экранного диктора) не считается
   const shown = (el) => {
+    // ответ в закрытом <details> браузер не рисует, но рамку у него всё равно сообщает
+    if (el.checkVisibility && !el.checkVisibility()) return false;
     for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
       const s = getComputedStyle(n);
       const r = n.getBoundingClientRect();
@@ -648,8 +650,15 @@ async function fillValid(form) {
     const type = await input.getAttribute("type");
     if (["hidden", "submit"].includes(type) || (await input.getAttribute("tabindex")) === "-1") continue;
     if (type === "checkbox") { if (await input.getAttribute("required") !== null) await input.check(); continue; }
+    // группа переключателей: отмечаем первый вариант, если в группе ещё ничего не выбрано
+    if (type === "radio") {
+      const picked = await input.evaluate((el) => !!el.form?.querySelector(`input[type="radio"][name="${CSS.escape(el.name)}"]:checked`));
+      if (!picked) await input.check();
+      continue;
+    }
     const name = (await input.getAttribute("name")) || "";
-    const value = type === "tel" || /phone/i.test(name) ? "8 (912) 345-67-80"
+    const value = (await input.getAttribute("data-validate")) === "contact" ? "@check_anna"
+      : type === "tel" || /phone/i.test(name) ? "8 (912) 345-67-80"
       : type === "email" ? "check@mail.ru"
       : (await input.evaluate((el) => el.tagName)) === "TEXTAREA" ? "Проверочная заявка"
       : "Анна";
@@ -681,7 +690,7 @@ async function checkForm(browser, url, index) {
     text: ((await status.textContent().catch(() => "")) || "").trim(),
     state: await status.getAttribute("data-state").catch(() => null),
   });
-  const values = () => form.locator('input:not([type="checkbox"]):not([tabindex="-1"]), textarea').evaluateAll((els) => els.map((el) => el.value));
+  const values = () => form.locator('input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([tabindex="-1"]), textarea').evaluateAll((els) => els.map((el) => el.value));
 
   // 0. Человек ввёл ерунду в поле и сразу жмёт «Отправить»: ошибка под полем появляется при уходе из него
   //    и сдвигает кнопку. Если из-за сдвига нажатие теряется, кнопка «не реагирует».
