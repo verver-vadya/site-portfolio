@@ -1,6 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 import { href } from "../scripts/cases";
+import { owner } from "../site";
 ---
 
 <Base
@@ -13,8 +14,8 @@ import { href } from "../scripts/cases";
 
     <h2>1. Кто обрабатывает данные</h2>
     <p>
-      Оператор персональных данных: [ЗАПОЛНИТЬ: ФИО, ИНН, статус — например, самозанятый]. По&nbsp;вопросам обработки
-      данных пишите на&nbsp;[почта].
+      Оператор персональных данных: {owner.fullName}, {owner.status}, ИНН {owner.inn}. По&nbsp;вопросам обработки
+      данных пишите на&nbsp;{owner.email}.
     </p>
 
     <h2>2. Какие данные я получаю</h2>
@@ -39,7 +40,7 @@ import { href } from "../scripts/cases";
     <h2>5. Ваши права</h2>
     <p>
       Вы можете узнать, какие данные о&nbsp;вас хранятся, попросить исправить или удалить их и&nbsp;отозвать согласие,
-      написав на&nbsp;[почта]. Отвечу в&nbsp;течение 10&nbsp;рабочих дней.
+      написав на&nbsp;{owner.email}. Отвечу в&nbsp;течение 10&nbsp;рабочих дней.
     </p>
 
     <a class="policy__back caps link" href={href()}>← На главную</a>

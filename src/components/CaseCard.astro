@@ -38,6 +38,7 @@ const d = entry.data;
     <span class="card__title">{d.title}</span>
     <span class="card__meta muted">{d.niche}, {d.city}, {d.year}</span>
     <span class="card__tag caps tag">{statusLabel[d.status]}</span>
+    {d.tagline && <span class="card__line">{d.tagline}</span>}
   </div>
 </a>
 
@@ -120,6 +121,13 @@ const d = entry.data;
   .card__meta {
     grid-column: 1;
     font-size: var(--fs-sm);
+  }
+  .card__line {
+    grid-column: 1 / -1;
+    max-width: 48ch;
+    margin-top: var(--s-2);
+    font-size: var(--fs-sm);
+    text-wrap: pretty;
   }
   .card__tag {
     grid-column: 2;

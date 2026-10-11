@@ -2,8 +2,12 @@
 // Заявка: четыре вопроса брифа, согласие по 152-ФЗ и запасной путь — Telegram и почта.
 // Заявки уходят в Formspree: вместо YOUR_FORM_ID поставить номер формы (см. README).
 import { href } from "../scripts/cases";
+import { owner } from "../site";
+import Me from "./Me.astro";
 
 const types = ["Лендинг", "Визитка или портфолио", "Сайт с записью или каталогом", "Пока не знаю"];
+const terms = ["Нужно за 2–3 недели", "В течение месяца-двух", "Не горит", "Пока не знаю"];
+const budgets = ["До 20 000 ₽", "20–40 тысяч ₽", "40–70 тысяч ₽", "Больше 70 тысяч ₽", "Пока не знаю"];
 ---
 
 <section class="contact wrap" id="contact" aria-labelledby="contact-title">
@@ -11,7 +15,10 @@ const types = ["Лендинг", "Визитка или портфолио", "С
   <div class="contact__body">
     <div class="contact__intro">
       <p class="contact__lead">Расскажите о&nbsp;задаче</p>
-      <p class="muted">Четыре вопроса, пара минут. Отвечу в&nbsp;течение дня: с&nbsp;вопросами или с&nbsp;оценкой.</p>
+      <div class="contact__who">
+        <Me size={64} />
+        <p><b>Отвечу я, {owner.name}.</b> <span class="muted">Четыре вопроса, пара минут, ни&nbsp;к&nbsp;чему не&nbsp;обязывает.</span></p>
+      </div>
     </div>
 
     <form class="form" action="https://formspree.io/f/YOUR_FORM_ID" method="post" data-form>
@@ -52,25 +59,32 @@ const types = ["Лендинг", "Визитка или портфолио", "С
         </div>
       </fieldset>
 
-      <div class="field">
-        <label class="caps" for="f-when">Сроки</label>
-        <select id="f-when" name="Сроки">
-          <option>Пока не знаю</option>
-          <option>Нужно за 2–3 недели</option>
-          <option>В течение месяца-двух</option>
-          <option>Не горит</option>
-        </select>
-      </div>
-      <div class="field">
-        <label class="caps" for="f-budget">Бюджет</label>
-        <select id="f-budget" name="Бюджет">
-          <option>Пока не знаю</option>
-          <option>До 25 000 ₽</option>
-          <option>25 000–45 000 ₽</option>
-          <option>45 000–100 000 ₽</option>
-          <option>Больше 100 000 ₽</option>
-        </select>
-      </div>
+      <fieldset class="field field--wide" data-name="f-when">
+        <legend class="caps">Сроки</legend>
+        <div class="choice">
+          {
+            terms.map((t, i) => (
+              <label class="choice__item">
+                <input id={i === 0 ? "f-when" : undefined} type="radio" name="Сроки" value={t} />
+                <span>{t}</span>
+              </label>
+            ))
+          }
+        </div>
+      </fieldset>
+      <fieldset class="field field--wide" data-name="f-budget">
+        <legend class="caps">Бюджет</legend>
+        <div class="choice">
+          {
+            budgets.map((t, i) => (
+              <label class="choice__item">
+                <input id={i === 0 ? "f-budget" : undefined} type="radio" name="Бюджет" value={t} />
+                <span>{t}</span>
+              </label>
+            ))
+          }
+        </div>
+      </fieldset>
 
       <div class="field field--wide">
         <label class="caps" for="f-message">Что ещё важно <span class="muted">(необязательно)</span></label>
@@ -92,13 +106,18 @@ const types = ["Лендинг", "Визитка или портфолио", "С
       <div class="form__send field--wide">
         <button class="btn" type="submit">Отправить заявку</button>
         <p class="form__status" role="status" aria-live="polite" hidden></p>
+        <ol class="next">
+          <li><span class="caps muted">01</span>Отвечу в&nbsp;течение дня туда, куда вы указали</li>
+          <li><span class="caps muted">02</span>Если нужно, созвонимся на&nbsp;15&nbsp;минут</li>
+          <li><span class="caps muted">03</span>Пришлю цену, сроки и&nbsp;что войдёт в&nbsp;работу</li>
+        </ol>
       </div>
     </form>
 
     <p class="contact__direct">
       <span class="caps muted">Или напрямую</span>
-      <a class="link link--line" href="https://t.me/[ник]">Telegram @[ник]</a>
-      <a class="link link--line" href="mailto:[почта]">[почта]</a>
+      <a class="link link--line" href={`https://t.me/${owner.telegram}`}>Telegram @{owner.telegram}</a>
+      <a class="link link--line" href={`mailto:${owner.email}`}>{owner.email}</a>
     </p>
   </div>
 </section>
@@ -123,6 +142,12 @@ const types = ["Лендинг", "Визитка или портфолио", "С
   .contact__intro {
     display: grid;
     gap: var(--s-3);
+  }
+  .contact__who {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    max-width: 52ch;
   }
   .contact__lead {
     font-size: var(--fs-xl);
@@ -160,8 +185,7 @@ const types = ["Лендинг", "Визитка или портфолио", "С
   }
 
   .field input:not([type="checkbox"], [type="radio"]),
-  .field textarea,
-  .field select {
+  .field textarea {
     width: 100%;
     min-height: 52px;
     padding: var(--s-3) var(--s-4);
@@ -176,26 +200,14 @@ const types = ["Лендинг", "Визитка или портфолио", "С
     min-height: 120px;
     resize: vertical;
   }
-  .field select {
-    padding-right: var(--s-12);
-    -webkit-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right var(--s-4) center;
-    background-size: 20px;
-    cursor: pointer;
-  }
   @media (hover: hover) {
     .field input:not([type="checkbox"], [type="radio"]):hover,
-    .field textarea:hover,
-    .field select:hover {
+    .field textarea:hover {
       border-color: var(--c-ink);
     }
   }
   .field input:focus-visible,
-  .field textarea:focus-visible,
-  .field select:focus-visible {
+  .field textarea:focus-visible {
     border-color: var(--c-ink);
     outline-offset: 2px;
   }
@@ -303,6 +315,24 @@ const types = ["Лендинг", "Визитка или портфолио", "С
     opacity: 0.6;
     cursor: progress;
   }
+  /* что будет после заявки */
+  .next {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--s-4);
+    width: 100%;
+    margin: var(--s-2) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-sm);
+  }
+  .next li {
+    display: grid;
+    gap: var(--s-1);
+    align-content: start;
+    padding-top: var(--s-3);
+    border-top: 1px solid var(--c-line);
+  }
   .form__status {
     max-width: 62ch;
     padding: var(--s-3) var(--s-4);
@@ -345,6 +375,10 @@ const types = ["Лендинг", "Визитка или портфолио", "С
     .form__send .btn {
       justify-self: stretch;
       justify-content: center;
+    }
+    .next {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--s-3);
     }
     .contact__direct {
       font-size: var(--fs-md);

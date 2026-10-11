@@ -18,6 +18,8 @@ const cases = defineCollection({
       live: z.boolean().default(true),
       order: z.number().default(10),
       summary: z.string(),
+      tagline: z.string().optional(), // подпись под карточкой: одна фраза с характером
+      term: z.string().optional(), // срок и повод: «два дня», «за неделю до открытия»
       desktop: z.array(image()).min(1),
       phone: z.array(image()).min(1),
     }),

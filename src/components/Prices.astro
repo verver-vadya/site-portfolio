@@ -7,6 +7,8 @@ const plans = [
     value: "Лендинг",
     name: "Лендинг",
     price: "от 15 000 ₽",
+    usual: "обычно 15–20 тысяч",
+    fit: "Подходит, если у вас одна услуга, акция или запуск и нужно быстро начать получать заявки.",
     term: "1–2 недели",
     items: [
       "Одна страница под услугу, акцию или запуск",
@@ -19,6 +21,8 @@ const plans = [
     value: "Визитка или портфолио",
     name: "Сайт-визитка",
     price: "от 25 000 ₽",
+    usual: "обычно 25–35 тысяч",
+    fit: "Подходит мастерам и небольшим компаниям, которым нужен понятный сайт с услугами и работами.",
     term: "2–3 недели",
     items: [
       "До пяти страниц: услуги, работы, о вас, контакты",
@@ -31,6 +35,8 @@ const plans = [
     value: "Сайт с записью или каталогом",
     name: "Запись или каталог",
     price: "от 45 000 ₽",
+    usual: "обычно 45–70 тысяч",
+    fit: "Подходит салонам, студиям и магазинам, где клиент выбирает услугу и сразу записывается или покупает.",
     term: "3–5 недель",
     items: [
       "Онлайн-запись через YClients или DIKIDI",
@@ -64,7 +70,11 @@ const plans = [
             <span>{p.term}</span>
           </p>
           <h3 class="plan__name">{p.name}</h3>
-          <p class="plan__price">{p.price}</p>
+          <p class="plan__fit muted">{p.fit}</p>
+          <p class="plan__price">
+            {p.price}
+            <span class="plan__usual muted">{p.usual}</span>
+          </p>
           <ul class="plan__list">
             {p.items.map((it) => <li>{it}</li>)}
           </ul>
@@ -76,10 +86,20 @@ const plans = [
       ))
     }
   </ul>
-  <p class="prices__note muted">
-    Хостинг и&nbsp;домен покупаются на&nbsp;ваше имя и&nbsp;оплачиваются отдельно, обычно 3–6 тысяч рублей в&nbsp;год.
-    Работа по&nbsp;договору: предоплата 30–50&nbsp;%, остаток после запуска.
-  </p>
+  <ul class="prices__promises">
+    <li>
+      <span class="caps">Гарантия</span>
+      Если прототип главной не&nbsp;понравится, верну предоплату целиком.
+    </li>
+    <li>
+      <span class="caps">Оплата</span>
+      По&nbsp;договору: предоплата 30–50&nbsp;%, остаток после запуска.
+    </li>
+    <li>
+      <span class="caps">Хостинг и&nbsp;домен</span>
+      Покупаются на&nbsp;ваше имя и&nbsp;оплачиваются отдельно, обычно 3–6 тысяч рублей в&nbsp;год.
+    </li>
+  </ul>
 </section>
 
 <style>
@@ -122,7 +142,7 @@ const plans = [
   }
   .plan {
     display: grid;
-    grid-template-rows: auto auto auto 1fr auto;
+    grid-template-rows: auto auto auto auto 1fr auto;
     gap: var(--s-4);
     padding: var(--s-6);
     border-radius: var(--radius-plate);
@@ -142,6 +162,18 @@ const plans = [
     font-weight: 700;
     line-height: 1.1;
     text-transform: uppercase;
+  }
+  .plan__fit {
+    max-width: 40ch;
+    font-size: var(--fs-sm);
+    text-wrap: pretty;
+  }
+  .plan__usual {
+    display: block;
+    margin-top: var(--s-2);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    letter-spacing: 0;
   }
   .plan__price {
     font-size: var(--fs-xl);
@@ -187,10 +219,19 @@ const plans = [
       transform: translateX(3px);
     }
   }
-  .prices__note {
-    max-width: 62ch;
+  .prices__promises {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: var(--s-4);
     margin-top: var(--s-6);
     font-size: var(--fs-sm);
+  }
+  .prices__promises li {
+    display: grid;
+    gap: var(--s-1);
+    align-content: start;
+    padding-top: var(--s-3);
+    border-top: 1.5px solid var(--c-ink);
   }
 
   @media (max-width: 720px) {

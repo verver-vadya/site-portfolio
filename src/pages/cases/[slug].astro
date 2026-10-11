@@ -29,6 +29,7 @@ const host = new URL(d.url).host + new URL(d.url).pathname.replace(/\/$/, "");
         <div><dt class="caps muted">Ниша</dt><dd>{d.niche}</dd></div>
         <div><dt class="caps muted">Город</dt><dd>{d.city}</dd></div>
         <div><dt class="caps muted">Год</dt><dd>{d.year}</dd></div>
+        {d.term && <div><dt class="caps muted">Срок</dt><dd>{d.term}</dd></div>}
         <div>
           <dt class="caps muted">Формат</dt>
           <dd>{d.status === "concept" ? "Концепт: учебная работа без заказчика" : statusLabel[d.status]}</dd>

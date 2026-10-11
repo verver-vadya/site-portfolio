@@ -6,6 +6,7 @@ import Prices from "../components/Prices.astro";
 import Faq from "../components/Faq.astro";
 import RequestForm from "../components/RequestForm.astro";
 import { getCases } from "../scripts/cases";
+import { owner } from "../site";
 
 const cases = await getCases();
 ---
@@ -41,7 +42,7 @@ const cases = await getCases();
     <h2 id="about-title" class="caps">Обо мне</h2>
     <div class="about__body">
       <p class="about__lead">
-        Меня зовут [ИМЯ]. Делаю сайты для небольших компаний и мастеров: от&nbsp;первого разговора
+        Меня зовут {owner.name}. Делаю сайты для небольших компаний и мастеров: от&nbsp;первого разговора
         до&nbsp;сайта, который работает на&nbsp;вашем хостинге и&nbsp;приводит заявки.
       </p>
       <dl class="about__list">
