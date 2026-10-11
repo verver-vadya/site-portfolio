@@ -1,0 +1,17 @@
+{
+  "name": "site-portfolio",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "case": "node scripts/add-case.mjs"
+  },
+  "dependencies": {
+    "astro": "7.3.5"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  }
+}

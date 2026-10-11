@@ -1,0 +1,19 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="footer wrap caps muted">
+  <span>© verver, {year}</span>
+  <span>Сайты под задачу бизнеса</span>
+</footer>
+
+<style>
+  .footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--s-2) var(--s-6);
+    padding-block: var(--s-8) var(--s-6);
+    border-top: 1px solid var(--c-line);
+  }
+</style>

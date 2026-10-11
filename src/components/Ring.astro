@@ -1,0 +1,232 @@
+---
+// Кольцо из скриншотов работ на первом экране.
+// Собирается само из кейсов: у каждого кейса 1–3 экрана, кольцо добирается повторами до 12 панелей.
+import { getImage } from "astro:assets";
+import type { CollectionEntry } from "astro:content";
+import { href, statusLabel } from "../scripts/cases";
+
+interface Props {
+  cases: CollectionEntry<"cases">[];
+}
+const { cases } = Astro.props;
+
+const MIN_PANELS = 12;
+const perCase = Math.min(3, Math.max(1, Math.ceil(MIN_PANELS / cases.length)));
+const set = cases.flatMap((c, ci) =>
+  Array.from({ length: perCase }, (_, s) => ({
+    ci,
+    desktop: c.data.desktop[s % c.data.desktop.length],
+    phone: c.data.phone[s % c.data.phone.length],
+  }))
+);
+const panels = Array.from({ length: Math.ceil(MIN_PANELS / set.length) }, () => set).flat();
+const n = panels.length;
+// первая работа встаёт серединой своих экранов
+const startAngle = -Math.floor((perCase - 1) / 2) * (360 / n);
+
+// на компьютере в кольце экраны компьютера, на телефоне — экраны телефона
+const opts = { format: "webp" as const, quality: 78 };
+const pictures = await Promise.all(
+  panels.map(async (p) => {
+    const d = await getImage({ src: p.desktop, widths: [480, 960], sizes: "40vw", ...opts });
+    const m = await getImage({ src: p.phone, widths: [240, 480], sizes: "40vw", ...opts });
+    return { ci: p.ci, d, m };
+  })
+);
+
+const info = cases.map((c) => ({
+  title: c.data.title,
+  meta: `${c.data.niche} · ${c.data.year} · ${statusLabel[c.data.status]}`,
+  href: href(`cases/${c.id}/`),
+}));
+const first = info[0];
+const pad = (i: number) => String(i).padStart(2, "0");
+---
+
+<div class="hero__ring">
+  <div
+    class="ring"
+    data-ring
+    data-n={n}
+    data-cases={JSON.stringify(info)}
+    style={`--n: ${n}`}
+    tabindex="0"
+    role="group"
+    aria-roledescription="карусель"
+    aria-label="Работы на кольце: стрелки влево и вправо крутят кольцо, Enter открывает работу"
+  >
+    <div class="ring__track" data-track style={`--angle: ${startAngle}deg`}>
+      {
+        pictures.map((p, i) => (
+          <div class="ring__panel" data-case={p.ci} data-i={i} style={`--i: ${i}`}>
+            <picture>
+              <source media="(max-width: 720px)" srcset={p.m.srcSet.attribute} sizes="40vw" type="image/webp" />
+              <img
+                src={p.d.src}
+                srcset={p.d.srcSet.attribute}
+                sizes="(max-width: 720px) 40vw, 40vw"
+                width={p.d.attributes.width}
+                height={p.d.attributes.height}
+                alt=""
+                loading={i < 2 || i > n - 2 ? "eager" : "lazy"}
+                fetchpriority={i === 0 ? "high" : undefined}
+                decoding="async"
+                draggable="false"
+              />
+            </picture>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</div>
+
+<div class="wrap hero__bar">
+  <p class="hero__case" aria-live="polite">
+    <span class="caps muted" data-ring-count>{pad(1)} / {pad(info.length)}</span>
+    <a class="hero__name link" href={first.href} data-ring-link data-ring-title>{first.title}</a>
+    <span class="caps muted" data-ring-meta>{first.meta}</span>
+  </p>
+  <div class="hero__ctrl">
+    <button class="round" type="button" data-ring-prev aria-label="Предыдущая работа">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+    </button>
+    <span class="caps muted hero__hint">Тяните кольцо</span>
+    <button class="round" type="button" data-ring-next aria-label="Следующая работа">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+    </button>
+  </div>
+  <a class="btn hero__open" href={first.href} data-ring-open>Открыть работу</a>
+</div>
+
+<style>
+  .hero__ring {
+    position: relative;
+    display: grid;
+    align-items: center;
+    overflow: hidden;
+    /* к краям кольцо растворяется */
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  }
+  .ring {
+    --w: clamp(220px, min(36vw, (100svh - 420px) * 1.6), 920px);
+    --h: calc(var(--w) * 0.625);
+    --gap: clamp(8px, 0.7vw, 14px);
+    --r: calc(var(--w) / 2 / tan(180deg / var(--n)));
+    position: relative;
+    height: calc(var(--h) + var(--s-8));
+    perspective: calc(var(--r) * 2);
+    cursor: grab;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+    outline: none;
+  }
+  .ring.is-dragging {
+    cursor: grabbing;
+  }
+  .ring:focus-visible .ring__track {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 6px;
+  }
+  .ring__track {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--w);
+    height: var(--h);
+    margin: calc(var(--h) / -2) 0 0 calc(var(--w) / -2);
+    transform-style: preserve-3d;
+    transform: translateZ(calc(var(--r) * -1)) rotateY(var(--angle, 0deg));
+    will-change: transform;
+  }
+  .ring__panel {
+    position: absolute;
+    inset: 0;
+    padding-inline: calc(var(--gap) / 2);
+    transform: rotateY(calc(var(--i) * 360deg / var(--n))) translateZ(var(--r));
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .ring__panel picture {
+    display: block;
+    height: 100%;
+  }
+  .ring__panel img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    border-radius: var(--radius-plate);
+    background: var(--c-plate);
+    pointer-events: none;
+  }
+
+  .hero__bar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+    gap: var(--s-4);
+    padding-block: var(--s-4) var(--s-6);
+  }
+  .hero__case {
+    display: grid;
+    gap: var(--s-1);
+    min-width: 0;
+  }
+  .hero__name {
+    justify-self: start;
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+  .hero__ctrl {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+  }
+  .hero__open {
+    justify-self: end;
+  }
+
+  @media (max-width: 720px) {
+    .ring {
+      /* на телефоне панели — экраны телефона */
+      --w: clamp(140px, 40vw, 220px);
+      --h: calc(var(--w) * 2.164);
+      --gap: 8px;
+    }
+    .hero__ring {
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+      mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+    }
+    .hero__bar {
+      grid-template-columns: 1fr auto;
+      grid-template-areas: "case ctrl" "open open";
+      align-items: center;
+      row-gap: var(--s-4);
+    }
+    .hero__case {
+      grid-area: case;
+    }
+    .hero__ctrl {
+      grid-area: ctrl;
+      gap: var(--s-2);
+    }
+    .hero__hint {
+      display: none;
+    }
+    .hero__open {
+      grid-area: open;
+      justify-self: stretch;
+      justify-content: center;
+    }
+  }
+</style>
+
+<script>
+  import { initRing } from "../scripts/ring";
+  document.querySelectorAll<HTMLElement>("[data-ring]").forEach(initRing);
+</script>
