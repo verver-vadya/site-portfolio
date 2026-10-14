@@ -110,13 +110,13 @@ const pad = (i: number) => String(i).padStart(2, "0");
     mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
   }
   .ring {
-    --w: clamp(220px, min(36vw, (100svh - 420px) * 1.6), 920px);
+    --w: calc(clamp(220px, min(36vw, (100svh - 420px) * 1.6), 920px) * var(--ring-size, 1));
     --h: calc(var(--w) * 0.625);
-    --gap: clamp(8px, 0.7vw, 14px);
+    --gap: calc(clamp(8px, 0.7vw, 14px) * var(--ring-gap, 1));
     --r: calc(var(--w) / 2 / tan(180deg / var(--n)));
     position: relative;
     height: calc(var(--h) + var(--s-8));
-    perspective: calc(var(--r) * 2);
+    perspective: calc(var(--r) * 2 * var(--ring-depth, 1));
     cursor: grab;
     touch-action: pan-y;
     user-select: none;
@@ -194,9 +194,9 @@ const pad = (i: number) => String(i).padStart(2, "0");
   @media (max-width: 720px) {
     .ring {
       /* на телефоне панели — экраны телефона */
-      --w: clamp(140px, 40vw, 220px);
+      --w: calc(clamp(140px, 40vw, 220px) * var(--ring-size, 1));
       --h: calc(var(--w) * 2.164);
-      --gap: 8px;
+      --gap: calc(8px * var(--ring-gap, 1));
     }
     .hero__ring {
       -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
@@ -229,4 +229,6 @@ const pad = (i: number) => String(i).padStart(2, "0");
 <script>
   import { initRing } from "../scripts/ring";
   document.querySelectorAll<HTMLElement>("[data-ring]").forEach(initRing);
+  // Панель живой настройки кольца (DialKit): только по ссылке с ?dial, обычным гостям не грузится
+  if (new URLSearchParams(location.search).has("dial")) import("../scripts/ring-dials");
 </script>
