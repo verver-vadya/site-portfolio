@@ -7,11 +7,14 @@
 
 type CaseInfo = { title: string; meta: string; href: string };
 
-const TURN_MS = 560; // поворот кнопкой или стрелкой
-const INTRO_MS = 1300; // доворот при загрузке
-const AUTO_SPEED = 2.5 / 1000; // сам ход, градусов в миллисекунду: панель за 12 секунд
-const AUTO_EASE = 600; // за сколько миллисекунд сам ход плавно набирает скорость или замирает
-const AUTO_DELAY = 2500; // пауза после действия человека, потом кольцо снова идёт само
+// Настройки движения. Объект, а не константы: панель DialKit (?dial) меняет их на лету.
+export const tune = {
+  turnMs: 560, // поворот кнопкой или стрелкой
+  introMs: 1300, // доворот при загрузке
+  autoSpeed: 2.5 / 1000, // сам ход, градусов в миллисекунду: панель за 12 секунд
+  autoEase: 600, // за сколько миллисекунд сам ход плавно набирает скорость или замирает
+  autoDelay: 2500, // пауза после действия человека, потом кольцо снова идёт само
+};
 const CLICK_SLOP = 6; // меньше этого сдвига — это нажатие, а не перетаскивание
 
 // Кривая поворота: мягкий старт, долгое торможение, как --ease-turn: cubic-bezier(0.35, 0, 0.15, 1)
@@ -83,8 +86,8 @@ export function initRing(ring: HTMLElement) {
   // сам ход идёт, только когда человек ничего не делает с кольцом и видит его
   const autoWanted = () =>
     !reduce.matches && !drag && !hover && onScreen && !document.hidden && !ring.matches(":focus-visible");
-  const autoTarget = (now: number) => (!tween && !glide && autoWanted() && now >= hold ? AUTO_SPEED : 0);
-  function pause(ms = AUTO_DELAY) {
+  const autoTarget = (now: number) => (!tween && !glide && autoWanted() && now >= hold ? tune.autoSpeed : 0);
+  function pause(ms = tune.autoDelay) {
     hold = performance.now() + ms;
     auto = 0;
     setTimeout(kick, ms + 20);
@@ -108,12 +111,12 @@ export function initRing(ring: HTMLElement) {
       glide.v *= Math.pow(0.0045, dt / 1000); // трение
       if (Math.abs(glide.v) < 0.02) {
         glide = null;
-        snap(TURN_MS * 0.8);
+        snap(tune.turnMs * 0.8);
       }
     } else if (!drag) {
       const target = autoTarget(now);
-      auto += (target - auto) * (1 - Math.exp(-dt / AUTO_EASE));
-      if (target === 0 && auto < AUTO_SPEED * 0.01) auto = 0;
+      auto += (target - auto) * (1 - Math.exp(-dt / tune.autoEase));
+      if (target === 0 && auto < Math.max(tune.autoSpeed * 0.01, 1e-6)) auto = 0;
       angle -= auto * dt;
     }
     render();
@@ -125,7 +128,7 @@ export function initRing(ring: HTMLElement) {
     raf = requestAnimationFrame(loop);
   }
 
-  function turnTo(target: number, dur = TURN_MS) {
+  function turnTo(target: number, dur = tune.turnMs) {
     glide = null;
     pause();
     if (reduce.matches || dur <= 0) {
@@ -138,7 +141,7 @@ export function initRing(ring: HTMLElement) {
     tween = { from: angle, to: target, start: performance.now(), dur };
     kick();
   }
-  const snap = (dur = TURN_MS) => turnTo(-frontIndex() * step, dur);
+  const snap = (dur = tune.turnMs) => turnTo(-frontIndex() * step, dur);
 
   // к соседней работе: ищем ближайшую панель другого кейса и встаём на середину его экранов
   function toCase(dir: 1 | -1) {
@@ -272,6 +275,8 @@ export function initRing(ring: HTMLElement) {
 
   // кольцо пересчитывает радиус само (через CSS), здесь только перерисовать
   addEventListener("resize", render, { passive: true });
+  // панель настройки поменяла скорость: снова запустить ход
+  addEventListener("ring:tune", kick);
 
   // ---- вход: при приветствии кольцо въезжает и доезжает до первой работы ----
   render();
@@ -279,8 +284,8 @@ export function initRing(ring: HTMLElement) {
     angle = home + step * 2.5;
     render();
     setTimeout(() => {
-      turnTo(home, INTRO_MS);
-      pause(INTRO_MS + 1200);
+      turnTo(home, tune.introMs);
+      pause(tune.introMs + 1200);
     }, 200);
   } else pause(1500);
 }

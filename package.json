@@ -9,7 +9,8 @@
     "case": "node scripts/add-case.mjs"
   },
   "dependencies": {
-    "astro": "7.3.5"
+    "astro": "7.3.5",
+    "dialkit": "^2.0.2"
   },
   "devDependencies": {
     "playwright": "^1.56.1"
