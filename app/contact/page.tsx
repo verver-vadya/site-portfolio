@@ -1,5 +1,6 @@
 import { Me } from "@/components/about/Me";
 import { BackLink } from "@/components/form/BackLink";
+import { CopyButton } from "@/components/CopyButton";
 import { RequestForm } from "@/components/form/RequestForm";
 import { pageMeta } from "@/lib/meta";
 import { owner } from "@/lib/site";
@@ -39,9 +40,12 @@ export default function ContactPage() {
             <a className="link" href={`https://t.me/${owner.telegram}`} target="_blank" rel="noopener">
               Telegram @{owner.telegram}
             </a>
-            <a className="link" href={`mailto:${owner.email}`}>
-              {owner.email}
-            </a>
+            <span className={s.mail}>
+              <a className="link" href={`mailto:${owner.email}`}>
+                {owner.email}
+              </a>
+              <CopyButton text={owner.email} label="Скопировать почту" />
+            </span>
           </div>
         </div>
 

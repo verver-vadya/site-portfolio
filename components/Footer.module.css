@@ -62,3 +62,8 @@
   text-decoration-color: currentColor;
   cursor: default;
 }
+
+.themeIcon {
+  flex: none;
+  color: var(--c-ink);
+}

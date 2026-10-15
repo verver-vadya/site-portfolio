@@ -2,6 +2,8 @@
 // Тема сайта: тёмная по умолчанию, светлая или как в системе. Выбор запоминается в браузере,
 // а до отрисовки его ставит скрипт в <head> (app/layout.tsx), чтобы страница не мигала.
 import { useEffect, useState } from "react";
+import { MorphIcon } from "morphicons/react";
+import { monitor, moon, sun } from "@/lib/icons";
 import s from "./Footer.module.css";
 
 type Choice = "dark" | "light" | "system";
@@ -61,6 +63,15 @@ export function ThemeSwitch() {
 
   return (
     <div className={s.theme} role="group" aria-label="Тема сайта">
+      {/* иконка перетекает в выбранную тему: луна, солнце или экран */}
+      <MorphIcon
+        className={s.themeIcon}
+        icon={choice === "light" ? sun : choice === "system" ? monitor : moon}
+        size={18}
+        strokeWidth={1.6}
+        spring="smooth"
+        reducedMotion="user"
+      />
       <span>Тема:</span>
       {options.map((o) => (
         <button
