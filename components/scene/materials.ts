@@ -98,7 +98,35 @@ export type PanelUniforms = {
   uRect: { value: THREE.Vector4 };
   uDepth: { value: number };
   uCover: { value: THREE.Vector4 };
+  // появление кольца (одни и те же объекты у всех панелей): см. ENTER ниже
+  uEnter: { value: number };
+  uEnterT: { value: number };
+  uStretch: { value: number };
+  // лента как ткань: при быстром вращении края стягиваются к центру кольца (uBend),
+  // лента чуть сжимается по высоте (uSqueeze) и растягивается вширь (uWiden)
+  uBend: { value: number };
+  uSqueeze: { value: number };
+  uWiden: { value: number };
+  uEnterLin: { value: number }; // время появления 0..1 без сглаживания: по нему раскручивается свиток
 };
+
+// Появление кольца, как в DialKit: лента лежит плашмя на воде широким кругом, съезжает к центру
+// и по кривой (трактриса: у воды почти горизонтально, выше всё круче) поднимается в стену кольца.
+// Длины в половинах высоты панели. uEnterT считается в World.tsx: на какой длине пути середина
+// панели встаёт на свою высоту.
+export const ENTER = {
+  curve: 1.87, // масштаб кривой: больше — положе и шире подъём
+  approach: 1.02, // насколько лента в начале не доходит до кривой
+  stretch: 1.19, // насколько далеко от кольца лежит лента на воде
+  slope: 0.25, // как быстро лента подтягивается к кольцу на подъёме
+  floor: 0.02, // высота над водой, на которой лента лежит
+};
+
+export function tractrixHeight(d: number, c: number) {
+  const inv = Math.exp(-Math.max(0, d) / c);
+  const ch = 1 / Math.max(1e-4, inv);
+  return c * (Math.acosh(ch) - Math.sqrt(Math.max(0, 1 - inv * inv)));
+}
 
 export function panelMaterial(shared: Shared, u: PanelUniforms) {
   return new THREE.ShaderMaterial({
@@ -115,18 +143,85 @@ export function panelMaterial(shared: Shared, u: PanelUniforms) {
     vertexShader: /* glsl */ `
       #include <clipping_planes_pars_vertex>
       uniform float uTheta, uWidth, uRadius, uHeight, uLift, uHover, uExpand, uDepth;
+      uniform float uEnter, uEnterT, uStretch, uBend, uSqueeze, uWiden, uEnterLin;
       uniform vec4 uRect;
       varying vec2 vUv;
       varying vec3 vWorld;
       varying vec3 vNormalW;
+
+      float tractrixHeight(float d, float c) {
+        float inv = exp(-max(0.0, d) / c);
+        float ch = 1.0 / max(0.0001, inv);
+        return c * (log(ch + sqrt(max(0.0, ch * ch - 1.0))) - sqrt(max(0.0, 1.0 - inv * inv)));
+      }
+
+      // точка ленты: место на панели поперёк (u от -0,5 до 0,5) и по высоте (yRel от -1 до 1)
+      vec3 band(float u, float yRel, float r) {
+        float h = uHeight * 0.5;
+        // Пока кольцо появляется, каждый экран свёрнут, как бумажный свиток, и раскручивается.
+        // Передние экраны раскручиваются раньше задних. В конце всё ровно, как без этого.
+        float lin = clamp((uEnterLin - 0.14 * (1.0 - cos(uTheta)) * 0.5) / 0.86, 0.0, 1.0);
+        float roll = 0.0; // по горизонтали не сворачиваем, только по вертикали (см. ниже)
+        float W = r * uWidth;
+        float sx = (u + 0.5) * W; // от левого края экрана
+        float p0 = W * (1.0 - roll); // отсюда бумага уходит в свиток
+        float rc = W * 0.1;
+        float dTan = 0.0;
+        float dIn = 0.0;
+        if (sx > p0) {
+          float a = (sx - p0) / rc;
+          float rr = rc / (1.0 + 0.12 * a); // виток к центру свитка всё уже
+          dTan = p0 + rr * sin(a) - sx;
+          dIn = rr * (1.0 - cos(a));
+        }
+        // верх экрана подвёрнут, как край листа, и расправляется вместе со свитком
+        float topCurl = 0.55 * (1.0 - smoothstep(0.0, 0.75, lin));
+        float q = h * (1.0 - topCurl * 1.4);
+        float yy = yRel * h;
+        float dY = 0.0;
+        if (yy > q && topCurl > 0.0) {
+          float a = (yy - q) / (h * 0.35);
+          dY = q + h * 0.35 * sin(a) - yy;
+          dIn += h * 0.35 * (1.0 - cos(a));
+        }
+        // лёгкая волна по ткани, затихает к концу появления
+        float flutter = (1.0 - smoothstep(0.1, 0.95, lin)) * 0.16 * h * sin(yRel * 2.4 + u * 5.0 + uEnterLin * 16.0 + uTheta * 3.0);
+        float th = uTheta + u * uWidth + dTan / r;
+        yRel = (yy + dY) / h;
+        float c = ${ENTER.curve.toFixed(3)} * h;
+        float e = clamp(uEnter, 0.0, 1.0);
+        float s = yRel * h + mix(-h - ${ENTER.approach.toFixed(3)} * h, uEnterT, e);
+        float off;
+        if (s <= 0.0) {
+          off = (c - s) * uStretch;
+        } else {
+          float k = pow(clamp(s / uEnterT, 0.0, 1.0), ${ENTER.slope.toFixed(3)});
+          off = c * (1.0 - smoothstep(0.0, 1.0, k)) * uStretch;
+        }
+        // в самом начале лента всплывает из-под воды
+        float y = ${ENTER.floor.toFixed(3)} + tractrixHeight(s, c) - (1.0 - smoothstep(0.0, 0.12, e)) * 0.7 * h;
+        float settle = smoothstep(0.86, 1.0, e);
+        off *= 1.0 - settle;
+        y = mix(y, uLift + h + yRel * h * uSqueeze, settle);
+        // верх и низ ленты стянуты к центру, середина выгнута: экран как ткань на обруче
+        float edge = 1.0 - sqrt(max(0.0, 1.0 - yRel * yRel));
+        r += off - uBend * h * edge - dIn + flutter;
+        return vec3(r * sin(th) * uWiden, y, r * cos(th));
+      }
+
       void main() {
         vUv = uv;
-        float th = uTheta + (uv.x - 0.5) * uWidth;
+        float u = uv.x - 0.5;
         float r = uRadius + uHover;
-        vec3 p = vec3(r * sin(th), uLift + uv.y * uHeight, r * cos(th));
+        float yRel = uv.y * 2.0 - 1.0;
+        vec3 p = band(u, yRel, r);
+        // нормаль по наклону ленты: пока лента лежит, она смотрит вверх; в свитке — по витку
+        vec3 up = band(u, yRel + 0.02, r) - band(u, yRel - 0.02, r);
+        vec3 side = band(u + 0.005, yRel, r) - band(u - 0.005, yRel, r);
+        vec3 n = normalize(cross(side, up));
         vec4 world = modelMatrix * vec4(p, 1.0);
         vWorld = world.xyz;
-        vNormalW = normalize((modelMatrix * vec4(sin(th), 0.0, cos(th), 0.0)).xyz);
+        vNormalW = normalize((modelMatrix * vec4(n, 0.0)).xyz);
         vec4 mvPosition = viewMatrix * world;
         vec4 flatPos = vec4(mix(uRect.x, uRect.z, uv.x), mix(uRect.y, uRect.w, uv.y), -uDepth, 1.0);
         gl_Position = projectionMatrix * mix(mvPosition, flatPos, uExpand);

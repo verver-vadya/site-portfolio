@@ -121,10 +121,12 @@ export function Motion() {
     return () => removeEventListener("click", onClick, true);
   }, [router]);
 
-  // новая страница на месте и прокручена наверх: можно снимать её снимок
+  // новая страница на месте и прокручена наверх: можно снимать её снимок.
+  // Не через requestAnimationFrame: пока шторка ждёт новую страницу, браузер не рисует кадры
+  // и rAF не срабатывает, тогда каждый переход висел до запасного таймера в 3 секунды.
   useEffect(() => {
     const p = pending.current;
-    if (p && trim(pathname) === p.path) requestAnimationFrame(() => p.done());
+    if (p && trim(pathname) === p.path) setTimeout(p.done, 0);
     // прокрутку Next.js сделал сам, Lenis должен об этом знать
     lenis.current?.scrollTo(scrollY, { immediate: true, force: true });
   }, [pathname]);
