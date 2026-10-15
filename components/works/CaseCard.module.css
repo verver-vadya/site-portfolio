@@ -1,0 +1,106 @@
+.card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-4);
+  color: var(--c-ink);
+  text-decoration: none;
+}
+
+.plate {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  overflow: clip;
+  border-radius: var(--radius-plate);
+  background: var(--c-plate);
+  transition: opacity var(--d-fast) var(--ease-out);
+}
+
+.shot {
+  grid-area: 1 / 1;
+  box-shadow: var(--shadow-shot);
+  transition: opacity 320ms var(--ease-soft), transform var(--d-soft) var(--ease-soft);
+}
+.desktop {
+  width: 84%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: 50% 0%;
+  border-radius: 3px;
+}
+.phone {
+  /* вне потока, чтобы ширина картинки не распирала карточку */
+  position: absolute;
+  top: 7%;
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  height: 86%;
+  width: auto;
+  aspect-ratio: 390 / 844;
+  object-fit: cover;
+  object-position: 50% 0%;
+  border-radius: 14px;
+}
+
+/* какой экран виден */
+[data-view="desktop"] .phone,
+[data-view="phone"] .desktop {
+  opacity: 0;
+  transform: scale(0.97);
+}
+
+/* крупное наведение: скриншот медленно приближается, текст стоит на месте */
+@media (hover: hover) {
+  [data-view="desktop"] .card:hover .desktop,
+  [data-view="phone"] .card:hover .phone {
+    transform: scale(1.035);
+  }
+}
+.card:active .plate {
+  opacity: 0.85;
+}
+
+.text {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--s-1) var(--s-4);
+}
+.title {
+  font-size: var(--fs-lg);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.tag {
+  grid-column: 2;
+  grid-row: 1;
+  margin-top: 2px;
+}
+.meta {
+  grid-column: 1 / -1;
+  font-size: var(--fs-sm);
+}
+.line {
+  grid-column: 1 / -1;
+  max-width: 44ch;
+  margin-top: var(--s-2);
+  font-size: var(--fs-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shot {
+    transition: opacity 250ms var(--ease-out);
+  }
+  [data-view="desktop"] .phone,
+  [data-view="phone"] .desktop {
+    transform: none;
+  }
+  @media (hover: hover) {
+    [data-view="desktop"] .card:hover .desktop,
+    [data-view="phone"] .card:hover .phone {
+      transform: none;
+    }
+  }
+}

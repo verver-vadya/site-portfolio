@@ -1,0 +1,89 @@
+/* Курсор-ромб: точка ровно под мышью, без отставания. Над ссылкой ромб становится контуром,
+   над работой — плашкой «Открыть». Белый с mix-blend-mode: difference виден и на белом, и на чёрном. */
+.cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--d-fast) var(--ease-out);
+}
+.cursor[data-on]:not([data-mode="text"]) {
+  opacity: 1;
+}
+
+.fill,
+.ring {
+  position: absolute;
+  mix-blend-mode: difference;
+  transition: transform 260ms var(--ease-out), opacity 200ms var(--ease-out);
+}
+.fill {
+  left: -5px;
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  transform: rotate(45deg);
+}
+.ring {
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid #fff;
+  opacity: 0;
+  transform: rotate(45deg) scale(0.4);
+}
+
+.open {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding-inline: var(--s-4);
+  border-radius: var(--radius-pill);
+  background: var(--c-ink);
+  color: var(--c-paper);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.4);
+  transition: transform 300ms var(--ease-out), opacity 200ms var(--ease-out);
+}
+
+.cursor[data-mode="link"] .fill {
+  opacity: 0;
+  transform: rotate(45deg) scale(0.3);
+}
+.cursor[data-mode="link"] .ring {
+  opacity: 1;
+  transform: rotate(45deg) scale(1);
+}
+.cursor[data-mode="open"] .fill {
+  opacity: 0;
+  transform: rotate(45deg) scale(0);
+}
+.cursor[data-mode="open"] .open {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.cursor[data-down] .fill {
+  transform: rotate(45deg) scale(0.7);
+}
+.cursor[data-down][data-mode="link"] .ring {
+  transform: rotate(45deg) scale(0.85);
+}
+.cursor[data-down][data-mode="open"] .open {
+  transform: translate(-50%, -50%) scale(0.94);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill,
+  .ring,
+  .open {
+    transition-property: opacity;
+  }
+}

@@ -1,0 +1,469 @@
+/* Токены: все цвета, размеры, отступы и движение задаются здесь.
+   Тёмная тема основная; светлая включается переключателем внизу страницы (data-theme="light"). */
+:root {
+  /* цвет: чёрно-белая основа, серые плашки под работы */
+  --c-paper: #0b0b0c;
+  --c-ink: #f2f2f2;
+  --c-muted: #9b9b98; /* 7:1 на тёмном */
+  --c-plate: #18181a;
+  --c-line: #262628;
+  --c-hover: #161618;
+  --c-focus: #f2f2f2;
+  --c-field: #6e6e6c; /* рамка поля, 3,6:1 на тёмном */
+  --c-press: #cfcfcc; /* наведение на нажатую кнопку */
+  --c-danger: #ff8a80;
+  --c-success: #6fcf97;
+  --c-scrim: rgb(0 0 0 / 0.62); /* затемнение под подписью поверх скриншота */
+  --mark-top: 0.3; /* прозрачность верхней половины ромба */
+  --shadow-shot: 0 1px 2px rgb(0 0 0 / 0.3), 0 18px 48px -20px rgb(0 0 0 / 0.85);
+  color-scheme: dark;
+
+  /* шрифты: Unbounded для крупного и логотипа, Onest для текста */
+  --font-display: var(--font-unbounded), "Arial Black", sans-serif;
+  --font-text: var(--font-onest), "Helvetica Neue", Arial, sans-serif;
+
+  /* размеры шрифта: 13 / 15 / 17 / 22 / 28–48 / 40–104 */
+  --fs-xs: 0.8125rem;
+  --fs-sm: 0.9375rem;
+  --fs-md: 1.0625rem;
+  --fs-lg: 1.375rem;
+  --fs-xl: clamp(1.75rem, 1.1rem + 2vw, 3rem);
+  --fs-2xl: clamp(2.5rem, 0.9rem + 5.4vw, 6.5rem);
+  --lh-text: 1.55;
+  --lh-head: 1.1;
+  --caps-spacing: 0.06em;
+
+  /* отступы: шаг 4 px */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-12: 48px;
+  --s-16: 64px;
+  --s-24: 96px;
+  --s-32: 128px;
+  --gutter: clamp(16px, 2.8vw, 48px);
+  --max: clamp(1760px, 86vw, 2240px);
+  --text-max: 68ch;
+  --header-h: 64px;
+
+  --radius-plate: 6px;
+  --radius-pill: 999px;
+
+  /* движение: мелочи 150–250 мс, панели открываются 450–550 мс и закрываются 300–350 мс,
+     крупное наведение 500–700 мс; плавный разгон и долгое торможение */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* мелочи */
+  --ease-soft: cubic-bezier(0.45, 0, 0.2, 1); /* открытие и крупное наведение */
+  --ease-close: cubic-bezier(0.5, 0, 0.3, 1); /* закрытие */
+  --d-fast: 180ms;
+  --d-open: 500ms;
+  --d-close: 320ms;
+  --d-soft: 600ms;
+}
+
+:root[data-theme="light"] {
+  --c-paper: #ffffff;
+  --c-ink: #111111;
+  --c-muted: #686866; /* 5,6:1 на белом */
+  --c-plate: #eeeeec;
+  --c-line: #dcdcd8;
+  --c-hover: #f4f4f2;
+  --c-focus: #111111;
+  --c-field: #8c8c88; /* 3,4:1 на белом */
+  --c-press: #333333;
+  --c-danger: #b3261e;
+  --c-success: #1d6b3a;
+  --c-scrim: rgb(0 0 0 / 0.55);
+  --mark-top: 0.22;
+  --shadow-shot: 0 1px 2px rgb(0 0 0 / 0.06), 0 16px 40px -18px rgb(0 0 0 / 0.35);
+  color-scheme: light;
+}
+
+/* при смене темы цвета меняются сразу, без растянутых переходов у кнопок */
+.is-theme-switching *,
+.is-theme-switching *::before,
+.is-theme-switching *::after {
+  transition: none !important;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* на больших экранах текст растёт: 16 px до 1440, 20 px к 2560 */
+  font-size: clamp(16px, 0.357vw + 10.86px, 20px);
+  -webkit-text-size-adjust: 100%;
+  scrollbar-gutter: stable;
+  background: var(--c-paper);
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-paper);
+  color: var(--c-ink);
+  font-family: var(--font-text);
+  font-size: var(--fs-md);
+  line-height: var(--lh-text);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+}
+
+/* над холстом 3D-сцены (он fixed, z-index 0), под шапкой */
+main {
+  position: relative;
+  z-index: 1;
+  flex: 1 0 auto;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+p,
+dl,
+dd,
+ul,
+ol,
+figure {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: var(--lh-head);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+::selection {
+  background: var(--c-ink);
+  color: var(--c-paper);
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 3px;
+}
+
+/* для экранного диктора: на экране не видно */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip {
+  position: absolute;
+  left: var(--gutter);
+  top: var(--s-2);
+  z-index: 100;
+  padding: var(--s-2) var(--s-4);
+  background: var(--c-ink);
+  color: var(--c-paper);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip:focus {
+  transform: none;
+}
+
+.wrap {
+  width: 100%;
+  max-width: var(--max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* подписи капслоком, как бирки на вещах */
+.caps {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  letter-spacing: var(--caps-spacing);
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+.muted {
+  color: var(--c-muted);
+}
+
+/* ссылка-подпись: подчёркивание проявляется */
+.link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  text-decoration-color: transparent;
+  transition: text-decoration-color var(--d-fast) var(--ease-out), opacity var(--d-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .link:hover {
+    text-decoration-color: currentColor;
+  }
+}
+.link:active {
+  opacity: 0.6;
+}
+
+/* бирка «Концепт» */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding-inline: var(--s-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-pill);
+}
+
+/* переключатель «Компьютер / Телефон» */
+.switch {
+  display: inline-flex;
+  padding: 2px;
+  border: 1.5px solid var(--c-ink);
+  border-radius: var(--radius-pill);
+}
+.switch button {
+  min-height: 44px;
+  min-width: 104px;
+  padding-inline: var(--s-4);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--c-ink);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out),
+    transform var(--d-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .switch button:hover {
+    background: var(--c-hover);
+  }
+  .switch button[aria-pressed="true"]:hover {
+    background: var(--c-press);
+  }
+}
+.switch button:active {
+  transform: scale(0.97);
+}
+.switch button[aria-pressed="true"] {
+  background: var(--c-ink);
+  color: var(--c-paper);
+}
+.switch button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* круглые кнопки со стрелками */
+.round {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1.5px solid var(--c-ink);
+  border-radius: 50%;
+  background: var(--c-paper);
+  color: var(--c-ink);
+  cursor: pointer;
+  transition: background-color var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out),
+    transform var(--d-fast) var(--ease-out);
+}
+.round svg {
+  width: 20px;
+  height: 20px;
+}
+@media (hover: hover) {
+  .round:hover {
+    background: var(--c-ink);
+    color: var(--c-paper);
+  }
+}
+.round:active {
+  transform: scale(0.94);
+}
+.round:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* главная кнопка: одна на экран; .btn--ghost — второстепенная, обводкой */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 52px;
+  padding-inline: var(--s-6);
+  border: 1.5px solid var(--c-ink);
+  border-radius: var(--radius-pill);
+  background: var(--c-ink);
+  color: var(--c-paper);
+  font: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out),
+    transform var(--d-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .btn:hover {
+    background: var(--c-paper);
+    color: var(--c-ink);
+  }
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: progress;
+}
+.btn--ghost {
+  background: transparent;
+  color: var(--c-ink);
+}
+@media (hover: hover) {
+  .btn--ghost:hover {
+    background: var(--c-ink);
+    color: var(--c-paper);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch button,
+  .round,
+  .btn {
+    transition-property: background-color, color;
+  }
+}
+
+/* Проявление при прокрутке: блок с data-reveal появляется, когда доходит до экрана (класс is-in ставит
+   components/motion). Пока скрипт не заработал (класс js на <html> ставится сразу, reveal-all — страховка),
+   ничего не прячется. Первый экран так не помечаем. */
+html.js:not(.reveal-all) [data-reveal]:not(.is-in) {
+  opacity: 0;
+  transform: translateY(18px);
+}
+[data-reveal] {
+  transition: opacity 700ms var(--ease-soft), transform 900ms var(--ease-soft);
+  transition-delay: calc(var(--reveal-i, 0) * 70ms);
+}
+/* при печати и сохранении в PDF видно всё, даже то, до чего не долистали */
+@media print {
+  html.js [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.js:not(.reveal-all) [data-reveal]:not(.is-in) {
+    transform: none;
+  }
+  [data-reveal] {
+    transition: opacity 500ms var(--ease-out);
+  }
+}
+
+/* первый раздел внутренней страницы: без линии сверху и ближе к шапке */
+#main > section:first-child:not(.hero) {
+  border-top: 0;
+}
+
+/* Курсор-ромб (components/motion/Motion.tsx): системный курсор прячем, в полях ввода он остаётся */
+html.cursor-on,
+html.cursor-on * {
+  cursor: none !important;
+}
+html.cursor-on :is(input:not([type="checkbox"], [type="radio"], [type="submit"]), textarea, select, [contenteditable]) {
+  cursor: text !important;
+}
+html.cursor-on select {
+  cursor: default !important;
+}
+
+/* Ромб-шторка между страницами (components/motion/Motion.tsx): старая страница чуть отступает
+   и темнеет, новая раскрывается ромбом из точки клика. Шапка стоит на месте. */
+::view-transition {
+  pointer-events: none;
+}
+html.is-curtain::view-transition-old(root) {
+  animation: curtain-out 620ms var(--ease-soft) both;
+}
+html.is-curtain::view-transition-new(root) {
+  animation: curtain-in 620ms var(--ease-soft) both;
+}
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header) {
+  display: none;
+}
+::view-transition-new(site-header) {
+  animation: none;
+}
+@keyframes curtain-out {
+  to {
+    opacity: 0.4;
+    transform: scale(0.985);
+  }
+}
+@keyframes curtain-in {
+  from {
+    clip-path: polygon(
+      var(--vt-x) var(--vt-y),
+      var(--vt-x) var(--vt-y),
+      var(--vt-x) var(--vt-y),
+      var(--vt-x) var(--vt-y)
+    );
+  }
+  to {
+    clip-path: polygon(
+      var(--vt-x) calc(var(--vt-y) - var(--vt-r)),
+      calc(var(--vt-x) + var(--vt-r)) var(--vt-y),
+      var(--vt-x) calc(var(--vt-y) + var(--vt-r)),
+      calc(var(--vt-x) - var(--vt-r)) var(--vt-y)
+    );
+  }
+}

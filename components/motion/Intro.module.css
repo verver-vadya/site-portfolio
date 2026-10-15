@@ -1,0 +1,101 @@
+/* Ромб 96 px: внутренний вырез ромба r0 = 33·0,96 ≈ 31,7 px, до его стороны от центра 22,4 px.
+   При раскрытии знак растёт в 70 раз, и стороны выреза уходят на 69 · 22,4 ≈ 1547 px —
+   полуплоскости едут ровно с ними, поэтому край страницы всё время совпадает с краем ромба. */
+.intro {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+:global(html.is-intro) .intro {
+  display: block;
+}
+:global(html.is-intro-skip) .intro {
+  opacity: 0;
+  transition: opacity 200ms var(--ease-out);
+}
+
+.side {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform: rotate(var(--a));
+}
+.piece {
+  position: absolute;
+  left: -200vmax;
+  bottom: 22.4px;
+  width: 400vmax;
+  height: 300vmax;
+  background: var(--c-paper);
+  animation: intro-open 560ms cubic-bezier(0.7, 0, 0.2, 1) 640ms both;
+}
+/* закрывает вырез ромба, пока «v» сходятся */
+.plug {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  background: var(--c-paper);
+  transform: rotate(45deg);
+  animation: intro-plug 1ms linear 640ms both;
+}
+
+.mark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 96px;
+  height: 96px;
+  margin: -48px 0 0 -48px;
+  overflow: visible;
+  fill: var(--c-ink);
+  animation:
+    intro-grow 560ms cubic-bezier(0.7, 0, 0.2, 1) 640ms both,
+    intro-fade 300ms var(--ease-out) 700ms both;
+}
+.top,
+.bottom {
+  animation: intro-meet 480ms var(--ease-soft) 80ms both;
+}
+.top {
+  fill-opacity: var(--mark-top);
+  --from: -40px;
+}
+.bottom {
+  --from: 40px;
+}
+
+@keyframes intro-meet {
+  from {
+    opacity: 0;
+    transform: translateY(var(--from));
+  }
+}
+@keyframes intro-open {
+  to {
+    transform: translateY(-1547px);
+  }
+}
+@keyframes intro-grow {
+  to {
+    transform: scale(70);
+  }
+}
+@keyframes intro-fade {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes intro-plug {
+  to {
+    opacity: 0;
+  }
+}

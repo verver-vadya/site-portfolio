@@ -1,0 +1,101 @@
+.about {
+  padding-block: var(--s-12) var(--s-16);
+}
+.title {
+  font-size: var(--fs-2xl);
+  margin-bottom: var(--s-16);
+}
+
+/* слева знак и подпись, справа текст: колонки как у призыва внизу страницы */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+  gap: var(--s-8) var(--s-12);
+}
+.who {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: var(--s-4);
+}
+.avatar {
+  --size: clamp(120px, 12vw, 240px);
+}
+.sign {
+  display: grid;
+  gap: var(--s-1);
+}
+
+.body {
+  display: grid;
+  gap: var(--s-12);
+  min-width: 0;
+}
+.lead {
+  max-width: 30ch;
+  font-size: var(--fs-xl);
+  line-height: 1.22;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* что входит в работу: строки на тонких линиях */
+.list {
+  max-width: 64rem;
+  border-bottom: 1px solid var(--c-line);
+}
+.row {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--s-2) var(--s-6);
+  padding-block: var(--s-4);
+  border-top: 1px solid var(--c-line);
+}
+.row dd {
+  max-width: 48ch;
+}
+
+.direct {
+  display: grid;
+  gap: var(--s-2);
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--s-8);
+  font-size: var(--fs-lg);
+}
+.links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .about {
+    padding-top: var(--s-8);
+  }
+  .title {
+    margin-bottom: var(--s-8);
+  }
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .who {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+  }
+  .avatar {
+    --size: 72px;
+  }
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .links {
+    display: grid;
+    font-size: var(--fs-md);
+  }
+}

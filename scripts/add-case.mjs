@@ -2,7 +2,7 @@
 //   npm run case -- <папка> <адрес сайта>
 //   npm run case -- kare https://verver-vadya.github.io/site-kare/
 // Снимает по три экрана сайта на компьютере (1440×900) и на телефоне (390×844)
-// в src/content/cases/<папка>/ и, если кейса ещё нет, создаёт index.md с полями для заполнения.
+// в content/cases/<папка>/ и, если кейса ещё нет, создаёт index.md с полями для заполнения.
 // Повторный запуск обновляет только скриншоты, текст кейса не трогает.
 import { chromium } from "playwright";
 import fs from "node:fs/promises";
@@ -14,7 +14,7 @@ if (!slug || !url || !/^[a-z0-9-]+$/.test(slug)) {
   process.exit(1);
 }
 
-const dir = path.resolve("src/content/cases", slug);
+const dir = path.resolve("content/cases", slug);
 await fs.mkdir(dir, { recursive: true });
 
 const browser = await chromium.launch(
@@ -25,6 +25,8 @@ const browser = await chromium.launch(
 async function shoot(kind, viewport, scale) {
   const page = await browser.newPage({ viewport, deviceScaleFactor: scale });
   await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
+  // без полосы прокрутки: иначе справа на снимке остаётся пустая полоса
+  await page.addStyleTag({ content: "html { scrollbar-width: none; scrollbar-gutter: auto !important; } ::-webkit-scrollbar { display: none; }" });
   await page.waitForTimeout(1500);
   const stops = await page.evaluate((vh) => {
     const max = document.documentElement.scrollHeight - vh;
@@ -58,17 +60,17 @@ if (!exists) {
   await fs.writeFile(
     md,
     `---
-title: "[НАЗВАНИЕ]"
-niche: "[НИША: кто клиент]"
-city: "[ГОРОД]"
+title: "[ЗАПОЛНИТЬ: название]"
+niche: "[ЗАПОЛНИТЬ: ниша, кто клиент]"
+city: "[ЗАПОЛНИТЬ: город]"
 year: ${new Date().getFullYear()}
 status: concept # concept — учебная работа, client — настоящий заказ
 url: "${url}"
 live: true # false, если превью ещё не опубликовано
 order: 10 # меньше — выше в списке
-summary: "[ОДНА ФРАЗА: что за сайт и чем он хорош]"
-tagline: "[ПОДПИСЬ В КАТАЛОГЕ: одна живая фраза, можно с иронией]"
-term: "[СРОК: например, две недели до открытия]"
+summary: "[ЗАПОЛНИТЬ: одна фраза, что за сайт и чем он хорош]"
+tagline: "[ЗАПОЛНИТЬ: подпись в каталоге, одна живая фраза, можно с иронией]"
+term: "[ЗАПОЛНИТЬ: срок, например «Две недели»]"
 desktop:
 ${shots("desktop")}
 phone:
@@ -77,12 +79,12 @@ ${shots("phone")}
 
 ## Задача
 
-[Кто клиент и что ему было нужно.]
+[ЗАПОЛНИТЬ: кто клиент и что ему было нужно.]
 
 ## Решение
 
-[Стиль, разделы, что сделано удобным.]
+[ЗАПОЛНИТЬ: стиль, разделы, что сделано удобным.]
 `
   );
-  console.log("  создан", path.relative(process.cwd(), md), "— заполните поля в [скобках]");
+  console.log("  создан", path.relative(process.cwd(), md), "— заполните поля с пометкой [ЗАПОЛНИТЬ] (автопроверка не пропустит их на сайт)");
 }

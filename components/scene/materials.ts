@@ -1,0 +1,327 @@
+// Шейдеры сцены: надпись, панели кольца, небо, вода и шторка при раскрытии кейса.
+// Каждый кадр рисуется в три прохода (см. World.tsx): отражение (мир перевёрнут под воду),
+// то, что под водой, и основной кадр. uPass говорит шейдеру, какой сейчас проход.
+import * as THREE from "three";
+
+export type Shared = {
+  uPass: { value: number }; // 0 основной кадр, 1 отражение, 2 под водой
+  uPaper: { value: THREE.Color };
+  uInk: { value: THREE.Color };
+  uPlate: { value: THREE.Color };
+  uDeep: { value: THREE.Color }; // цвет глубины
+  uGlow: { value: THREE.Color }; // небо у горизонта
+  uReflH: { value: number }; // на какой высоте отражение уже почти погасло
+};
+
+export function createShared(): Shared {
+  return {
+    uPass: { value: 0 },
+    uPaper: { value: new THREE.Color("#0b0b0c") },
+    uInk: { value: new THREE.Color("#f2f2f2") },
+    uPlate: { value: new THREE.Color("#18181a") },
+    uDeep: { value: new THREE.Color("#050506") },
+    uGlow: { value: new THREE.Color("#1d1d20") },
+    uReflH: { value: 1.2 },
+  };
+}
+
+// Под водой предмет темнеет и уходит в цвет глубины. В отражении мир перевёрнут, поэтому высота
+// над водой = -vWorld.y: у кромки отражение чёткое, выше растворяется в цвете фона, как на логотипе
+const passChunk = /* glsl */ `
+  if (uPass > 1.5) {
+    float depth = clamp(-vWorld.y / uReflH, 0.0, 1.0);
+    col = mix(col * 0.6, uDeep, smoothstep(0.0, 1.0, 0.35 + 0.65 * depth));
+  } else if (uPass > 0.5) {
+    col = mix(col, uPaper, 0.62 * smoothstep(0.0, uReflH, -vWorld.y)) * 0.82;
+  }
+`;
+
+// ---------- надпись verver ----------
+
+export function wordMaterial(shared: Shared) {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uPass: shared.uPass,
+      uInk: shared.uInk,
+      uPaper: shared.uPaper,
+      uDeep: shared.uDeep,
+      uReflH: shared.uReflH,
+    },
+    clipping: true,
+    side: THREE.DoubleSide,
+    vertexShader: /* glsl */ `
+      #include <clipping_planes_pars_vertex>
+      varying vec3 vWorld;
+      void main() {
+        vec4 world = modelMatrix * vec4(position, 1.0);
+        vWorld = world.xyz;
+        vec4 mvPosition = viewMatrix * world;
+        gl_Position = projectionMatrix * mvPosition;
+        #include <clipping_planes_vertex>
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      #include <clipping_planes_pars_fragment>
+      uniform float uPass, uReflH;
+      uniform vec3 uInk, uPaper;
+      uniform vec3 uDeep;
+      varying vec3 vWorld;
+      void main() {
+        #include <clipping_planes_fragment>
+        vec3 col = uInk;
+        ${passChunk}
+        gl_FragColor = vec4(col, 1.0);
+        #include <colorspace_fragment>
+      }
+    `,
+  });
+}
+
+// ---------- панель кольца ----------
+// Сетка 1×1 в шейдере сгибается в кусок цилиндра. uExpand переводит её в плоский прямоугольник
+// перед камерой (uRect в координатах камеры), а картинку — в «cover» под этот прямоугольник.
+
+export type PanelUniforms = {
+  uMap: { value: THREE.Texture | null };
+  uMap2: { value: THREE.Texture | null }; // при раскрытии: экран, который стоит первым на странице кейса
+  uMix: { value: number }; // 0 — свой экран, 1 — экран со страницы кейса
+  uHasMap: { value: number };
+  uTheta: { value: number };
+  uWidth: { value: number };
+  uRadius: { value: number };
+  uHeight: { value: number };
+  uLift: { value: number };
+  uHover: { value: number };
+  uBlur: { value: number };
+  uDim: { value: number };
+  uExpand: { value: number };
+  uRect: { value: THREE.Vector4 };
+  uDepth: { value: number };
+  uCover: { value: THREE.Vector4 };
+};
+
+export function panelMaterial(shared: Shared, u: PanelUniforms) {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      ...u,
+      uPass: shared.uPass,
+      uDeep: shared.uDeep,
+      uPlate: shared.uPlate,
+      uPaper: shared.uPaper,
+      uReflH: shared.uReflH,
+    },
+    clipping: true,
+    side: THREE.DoubleSide,
+    vertexShader: /* glsl */ `
+      #include <clipping_planes_pars_vertex>
+      uniform float uTheta, uWidth, uRadius, uHeight, uLift, uHover, uExpand, uDepth;
+      uniform vec4 uRect;
+      varying vec2 vUv;
+      varying vec3 vWorld;
+      varying vec3 vNormalW;
+      void main() {
+        vUv = uv;
+        float th = uTheta + (uv.x - 0.5) * uWidth;
+        float r = uRadius + uHover;
+        vec3 p = vec3(r * sin(th), uLift + uv.y * uHeight, r * cos(th));
+        vec4 world = modelMatrix * vec4(p, 1.0);
+        vWorld = world.xyz;
+        vNormalW = normalize((modelMatrix * vec4(sin(th), 0.0, cos(th), 0.0)).xyz);
+        vec4 mvPosition = viewMatrix * world;
+        vec4 flatPos = vec4(mix(uRect.x, uRect.z, uv.x), mix(uRect.y, uRect.w, uv.y), -uDepth, 1.0);
+        gl_Position = projectionMatrix * mix(mvPosition, flatPos, uExpand);
+        #include <clipping_planes_vertex>
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      #include <clipping_planes_pars_fragment>
+      uniform sampler2D uMap, uMap2;
+      uniform float uHasMap, uMix, uBlur, uDim, uExpand, uPass, uReflH;
+      uniform vec4 uCover;
+      uniform vec3 uDeep, uPlate, uPaper;
+      varying vec2 vUv;
+      varying vec3 vWorld;
+      varying vec3 vNormalW;
+
+      // при быстром вращении картинка размывается вдоль хода кольца
+      vec3 blurred(sampler2D map, vec2 uv) {
+        vec3 sum = vec3(0.0);
+        float total = 0.0;
+        for (int i = -3; i <= 3; i++) {
+          float w = 1.0 - abs(float(i)) / 4.0;
+          sum += texture2D(map, uv + vec2(float(i) * uBlur, 0.0)).rgb * w;
+          total += w;
+        }
+        return sum / total;
+      }
+
+      void main() {
+        #include <clipping_planes_fragment>
+        vec3 col = uPlate;
+        bool front = gl_FrontFacing || uExpand > 0.0;
+        if (front && uHasMap > 0.5) {
+          vec2 uv = mix(vUv, vUv * uCover.xy + uCover.zw, uExpand);
+          col = blurred(uMap, uv);
+          if (uMix > 0.0) col = mix(col, texture2D(uMap2, uv).rgb, uMix);
+        } else if (!front) {
+          col = uPlate * 0.8;
+        }
+        // боковые и дальние панели темнее, раскрытая — как есть
+        vec3 v = normalize(cameraPosition - vWorld);
+        float facing = abs(dot(vNormalW, v));
+        float shade = mix(0.42, 1.0, smoothstep(0.05, 0.85, facing)) * uDim;
+        col *= mix(shade, 1.0, uExpand);
+        ${passChunk}
+        gl_FragColor = vec4(col, 1.0);
+        #include <colorspace_fragment>
+      }
+    `,
+  });
+}
+
+// ---------- небо: ровный фон с еле заметным светом у горизонта ----------
+
+export function skyMaterial(shared: Shared) {
+  return new THREE.ShaderMaterial({
+    uniforms: { uPaper: shared.uPaper, uGlow: shared.uGlow, uPass: shared.uPass },
+    vertexShader: /* glsl */ `
+      varying vec3 vWorld;
+      void main() {
+        vec4 world = modelMatrix * vec4(position, 1.0);
+        vWorld = world.xyz;
+        gl_Position = projectionMatrix * viewMatrix * world;
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform vec3 uPaper, uGlow;
+      uniform float uPass;
+      varying vec3 vWorld;
+      void main() {
+        float h = abs(vWorld.y);
+        vec3 col = mix(uGlow, uPaper, pow(smoothstep(0.0, 90.0, h), 0.55));
+        if (uPass > 0.5) col *= 0.9;
+        gl_FragColor = vec4(col, 1.0);
+        #include <colorspace_fragment>
+      }
+    `,
+  });
+}
+
+// ---------- вода ----------
+// Высоты ряби берутся из симуляции (tSim), поверх неё мелкие волны от времени.
+// Отражение и то, что под водой, читаются из текстур проходов по координатам экрана.
+
+export type WaterUniforms = {
+  tReflect: { value: THREE.Texture | null };
+  tRefract: { value: THREE.Texture | null };
+  tSim: { value: THREE.Texture | null };
+  uSimRect: { value: THREE.Vector4 }; // x0, z0, ширина, глубина в мире
+  uSimTexel: { value: THREE.Vector2 };
+  uSimOn: { value: number };
+  uRes: { value: THREE.Vector2 }; // размер кадра в пикселях
+  uTime: { value: number };
+  uCalm: { value: number }; // 0..1, слабее мелкие волны
+};
+
+export function waterMaterial(shared: Shared, u: WaterUniforms) {
+  return new THREE.ShaderMaterial({
+    uniforms: { ...u, uPaper: shared.uPaper, uDeep: shared.uDeep, uGlow: shared.uGlow },
+    vertexShader: /* glsl */ `
+      varying vec3 vWorld;
+      void main() {
+        vec4 world = modelMatrix * vec4(position, 1.0);
+        vWorld = world.xyz;
+        gl_Position = projectionMatrix * viewMatrix * world;
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform sampler2D tReflect, tRefract, tSim;
+      uniform vec4 uSimRect;
+      uniform vec2 uSimTexel, uRes;
+      uniform float uSimOn, uTime, uCalm;
+      uniform vec3 uPaper, uDeep, uGlow;
+      varying vec3 vWorld;
+
+      // Волна, которая на экране короче ~10 пикселей, рябит лесенкой (у горизонта вода сжата
+      // по вертикали в разы), поэтому такие волны гасим. px — сколько мира в одном пикселе.
+      float keep(vec2 px, vec2 d, float k) {
+        return 1.0 - smoothstep(0.35, 1.0, k * dot(px, abs(d)));
+      }
+
+      // наклон поверхности от мелких волн: сумма синусов разных направлений
+      vec2 ambient(vec2 p, vec2 px, float t) {
+        vec2 g = vec2(0.0);
+        vec2 d1 = normalize(vec2(0.8, 0.6)), d2 = normalize(vec2(-0.6, 0.9)), d3 = normalize(vec2(0.2, -1.0));
+        g += d1 * cos(dot(p, d1) * 2.1 + t * 0.9) * 0.0016 * keep(px, d1, 2.1);
+        g += d2 * cos(dot(p, d2) * 3.3 - t * 1.25) * 0.0011 * keep(px, d2, 3.3);
+        g += d3 * cos(dot(p, d3) * 5.7 + t * 1.7) * 0.0007 * keep(px, d3, 5.7);
+        return g;
+      }
+
+      void main() {
+        vec3 toCam = cameraPosition - vWorld;
+        float dist = length(toCam);
+        vec3 v = toCam / dist;
+
+        // производные считаем до любых ветвлений
+        vec2 px = abs(dFdx(vWorld.xz)) + abs(dFdy(vWorld.xz));
+        vec2 suv = (vWorld.xz - uSimRect.xy) / uSimRect.zw;
+        // сколько клеток ряби приходится на пиксель: если больше двух, рябь у горизонта сглаживаем
+        float cells = max(px.x / (uSimRect.z * uSimTexel.x), px.y / (uSimRect.w * uSimTexel.y));
+        float simKeep = 1.0 - smoothstep(1.2, 3.0, cells);
+
+        vec2 grad = vec2(0.0);
+        if (uSimOn > 0.5 && suv.x > 0.0 && suv.x < 1.0 && suv.y > 0.0 && suv.y < 1.0) {
+          vec2 edge = smoothstep(0.0, 0.06, suv) * smoothstep(0.0, 0.06, 1.0 - suv);
+          grad = texture2D(tSim, suv).ba * edge.x * edge.y * simKeep;
+        }
+        // мелкие волны гаснут вдаль, чтобы у горизонта не рябило
+        float far = smoothstep(70.0, 6.0, dist);
+        grad += ambient(vWorld.xz, px, uTime) * far * (1.0 - 0.6 * uCalm);
+
+        vec3 n = normalize(vec3(-grad.x * 4.0, 1.0, -grad.y * 4.0));
+        float cosT = clamp(dot(n, v), 0.0, 1.0);
+        // сколько отражается: у горизонта почти всё, под камерой меньше, но не до черноты
+        float fres = mix(0.55, 1.0, pow(1.0 - cosT, 3.0));
+
+        // сдвиг картинки по экрану: ближе к камере сильнее
+        vec2 screen = gl_FragCoord.xy / uRes;
+        vec2 off = vec2(grad.x, -grad.y) * 1.1 * clamp(9.0 / dist, 0.25, 1.6);
+        vec3 refl = texture2D(tReflect, screen + off).rgb;
+        vec3 refr = texture2D(tRefract, screen + off * 1.5).rgb;
+        vec3 col = mix(refr, refl, fres);
+
+        // тонкий блик на гребнях ряби
+        float crest = clamp(length(grad) * 40.0 - 0.2, 0.0, 1.0);
+        col += crest * 0.03 * far;
+        // вдали вода сливается с небом у горизонта
+        col = mix(col, uGlow, smoothstep(120.0, 700.0, dist));
+
+        gl_FragColor = vec4(col, 1.0);
+        #include <colorspace_fragment>
+      }
+    `,
+  });
+}
+
+// ---------- шторка: заливает кадр цветом фона, пока панель раскрывается ----------
+
+export function fadeMaterial(shared: Shared) {
+  return new THREE.ShaderMaterial({
+    uniforms: { uPaper: shared.uPaper, uFade: { value: 0 } },
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    vertexShader: /* glsl */ `
+      void main() { gl_Position = vec4(position.xy * 2.0, 0.0, 1.0); }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform vec3 uPaper;
+      uniform float uFade;
+      void main() {
+        gl_FragColor = vec4(uPaper, uFade);
+        #include <colorspace_fragment>
+      }
+    `,
+  });
+}

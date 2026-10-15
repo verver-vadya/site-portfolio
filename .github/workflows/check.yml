@@ -39,18 +39,18 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             .github/check/package-lock.json
-      # Сайт на Astro: собираем в dist (с корнем "/") и проверяем уже собранный
+      # Сайт на Next.js (раньше Astro): собираем в dist (с корнем "/") и проверяем уже собранный
       - name: Сборка сайта
         working-directory: .
         run: npm ci && npm run build
         env:
           BASE_PATH: /
-      # Прошлую версию тоже собираем, если она на Astro; иначе берём как есть
+      # Прошлую версию тоже собираем, если она на Astro или Next.js; иначе берём как есть
       - name: Сборка прошлой версии
         if: github.event_name == 'pull_request'
         working-directory: .base-site
         run: |
-          if [ -f package.json ] && grep -q '"astro"' package.json; then
+          if [ -f package.json ] && grep -qE '"(astro|next)"' package.json; then
             npm ci && npm run build && echo "BASE_DIR=../../.base-site/dist" >> "$GITHUB_ENV"
           else
             echo "BASE_DIR=../../.base-site" >> "$GITHUB_ENV"

@@ -1,0 +1,61 @@
+/* На главной блок наезжает на неподвижную 3D-сцену, поэтому у него свой фон */
+.works {
+  position: relative;
+  z-index: 1;
+  padding-block: var(--s-16) var(--s-24);
+  background: var(--c-paper);
+  scroll-margin-top: var(--header-h);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-6) var(--s-8);
+  padding-bottom: var(--s-6);
+  margin-bottom: var(--s-8);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.title1 {
+  font-size: var(--fs-2xl);
+}
+
+/* Отдельная страница «Работы»: верхний отступ как у остальных страниц (Цены, Обо мне, Политика) */
+.works.page {
+  padding-top: var(--s-12);
+}
+.title2 {
+  font-size: var(--fs-xl);
+}
+.count {
+  color: var(--c-muted);
+  font-weight: 400;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+  gap: var(--s-16) var(--s-6);
+}
+@media (min-width: 1200px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .works {
+    padding-block: var(--s-12) var(--s-16);
+  }
+  .works.page {
+    padding-top: var(--s-8);
+  }
+  .head {
+    margin-bottom: var(--s-6);
+  }
+  .grid {
+    gap: var(--s-12);
+  }
+}

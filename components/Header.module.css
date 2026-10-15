@@ -1,0 +1,103 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--c-paper);
+  /* при смене страницы шапка стоит на месте, страница проявляется под ней */
+  view-transition-name: site-header;
+  transition: transform 320ms var(--ease-soft), box-shadow var(--d-fast) var(--ease-out);
+}
+/* когда шапка вернулась посреди страницы, под ней тонкая линия */
+.floating {
+  box-shadow: 0 1px 0 var(--c-line);
+}
+.hidden:not(:focus-within) {
+  transform: translateY(-100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  /* без движения шапка просто растворяется на месте */
+  .header {
+    transition: opacity 200ms var(--ease-out), visibility 200ms;
+  }
+  .hidden:not(:focus-within) {
+    transform: none;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.in {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  height: var(--header-h);
+}
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
+  color: var(--c-ink);
+  transition: opacity var(--d-fast) var(--ease-out);
+}
+.mark:active {
+  opacity: 0.6;
+}
+.full {
+  display: block;
+  height: 24px;
+  width: auto;
+}
+.short {
+  display: none;
+  height: 28px;
+  width: 28px;
+}
+
+.list {
+  display: flex;
+  gap: clamp(var(--s-4), 2.4vw, var(--s-8));
+}
+.item {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  white-space: nowrap;
+}
+/* текущий раздел подчёркнут постоянно */
+.here {
+  text-decoration-color: currentColor;
+}
+
+/* на телефоне вместо надписи только ромб, чтобы влезли все разделы */
+@media (max-width: 560px) {
+  .full {
+    display: none;
+  }
+  .short {
+    display: block;
+  }
+}
+/* до 420 пикселей пункты чуть плотнее, иначе «Связаться» не влезает */
+@media (max-width: 420px) {
+  .in {
+    gap: var(--s-3);
+  }
+  .list {
+    gap: var(--s-3);
+  }
+  .item {
+    letter-spacing: 0.02em;
+  }
+}
+@media (max-width: 360px) {
+  .list {
+    gap: var(--s-4);
+  }
+  /* на узком телефоне четыре пункта не влезают: «Обо мне» есть в конце главной и других страниц */
+  .narrow {
+    display: none;
+  }
+}
