@@ -241,7 +241,6 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     autoAt: 6,
     rise: 0, // появление кольца 0..1 после сглаживания
     prevRise: 0,
-    prevAng: NaN,
     enterT: 0, // время появления 0..1, без сглаживания
     enterWant: false,
     front: -1,
@@ -594,7 +593,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       }
       // рябь от курсора: капля тем сильнее, чем быстрее движение
       const hit = waterHit();
-      if (hit && !s.expand) {
+      if (hit && !s.expand && s.progress < 0.55) {
         const last = s.pointer.lastWater;
         const dist = last ? last.distanceTo(hit) : 0;
         if (!last || dist > 0.06) {
@@ -811,26 +810,6 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     built.enterU.uEnterLin.value = s.enterT;
     built.ring.position.set(0, 0, -built.ringInfo.radius);
     built.ring.visible = s.rise > 0.001;
-    // круги на воде там, где лента сходит с воды на подъём
-    const riseSpeed = Math.abs(s.rise - s.prevRise) / dt;
-    if (riseSpeed > 0.01 && s.rise < 0.95 && s.sim) {
-      const { radius, width } = built.ringInfo;
-      const h = HP / 2;
-      const travel = -h - ENTER.approach * h + (built.enterU.uEnterT.value + h + ENTER.approach * h) * s.rise;
-      const foot = travel - h <= 0 ? ENTER.curve * h * built.enterU.uStretch.value : 0;
-      const settle = smooth(clamp((s.rise - 0.86) / 0.14));
-      const rr = radius + foot * (1 - settle);
-      for (let k = 0; k < 3; k++) {
-        const pnl = built.panels[Math.floor(Math.random() * n)];
-        const a = pnl.theta + s.rot + (Math.random() - 0.5) * width;
-        if (Math.cos(a) < -0.3) continue;
-        const x = rr * Math.sin(a);
-        const z = rr * Math.cos(a) + built.ring.position.z;
-        const r = s.simRect;
-        s.sim.drop((x - r.x) / r.z, (z - r.y) / r.w, 0.2 / r.z, Math.min(riseSpeed * 0.01, 0.014));
-      }
-    }
-
     // вращение: перетаскивание, инерция, пружина к ближайшей панели, сам шагает раз в несколько секунд
     if (s.mode === "inertia") {
       s.vel *= Math.exp(-dt * 3.2);
@@ -857,32 +836,15 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     }
     // пока поднимается, кольцо доворачивается и замедляется: подъём по спирали
     const spin = 0.9 * (1 - s.enterT) * (1 - s.enterT);
-    // скорость вращения (рад/с) вместе с доворотом при появлении
-    const ang = s.rot + spin;
-    const w = Number.isNaN(s.prevAng) ? 0 : Math.abs(ang - s.prevAng) / dt;
-    s.prevAng = ang;
-    const blur = Math.min(w * 0.0016, 0.011);
-    // лента как ткань (как в DialKit): чем быстрее крутится, тем сильнее прогибается, сжимается
-    // по высоте и растягивается вширь; при появлении ещё и выгнута, пока не встанет
-    {
-      const k = clamp((w - 0.3) / 1.7);
-      const kk = k * k * (3 - 2 * k);
-      const settle = smooth(clamp((s.rise - 0.86) / 0.14));
-      // в покое лента тоже выгнута (край экрана сбоку идёт дугой), при вращении и появлении сильнее
-      const bend = 0.08 + 0.32 * kk * kk + 0.12 * (1 - settle) * Math.min(1, s.rise * 4);
-      const u = built.enterU;
-      const attack = 1 - Math.exp(-dt * (bend > u.uBend.value ? 4 : 2.5));
-      u.uBend.value += (bend - u.uBend.value) * attack;
-      u.uSqueeze.value += (1 - 0.06 * kk - u.uSqueeze.value) * attack;
-      u.uWiden.value += (1 + 0.12 * kk - u.uWiden.value) * attack;
-    }
+    // при вращении экраны не размываются и не гнутся
+    const blur = 0;
 
     built.panels.forEach((pnl, i) => {
       pnl.u.uTheta.value = pnl.theta + s.rot + spin;
       const want = i === s.hovered && !s.drag.active ? 1 : 0;
       pnl.hover += (want - pnl.hover) * (1 - Math.exp(-dt * 7));
       if (!s.expand || s.expand.panel !== pnl) {
-        pnl.u.uHover.value = pnl.hover * 0.24;
+        pnl.u.uHover.value = pnl.hover * 0.12;
         pnl.u.uBlur.value = blur;
       }
     });
@@ -932,7 +894,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       const k = clamp(ex.t / 0.95);
       const eased = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
       ex.panel.u.uExpand.value = eased;
-      ex.panel.u.uHover.value = ex.panel.hover * 0.24 * (1 - eased);
+      ex.panel.u.uHover.value = ex.panel.hover * 0.12 * (1 - eased);
       ex.panel.u.uBlur.value = 0;
       (built.fade.material as THREE.ShaderMaterial).uniforms.uFade.value = smooth(clamp(ex.t / 0.6));
       // смена картинки: не раньше середины раскрытия, за 0,45 секунды
@@ -970,7 +932,10 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     const sh = built.shared;
     const prevClip = gl.clippingPlanes;
 
-    // 1. отражение: мир перевёрнут под воду, остаётся только то, что было над водой
+    // 1. отражение: мир перевёрнут под воду, остаётся только то, что было над водой.
+    // Кольцо в воде не отражается и под водой не видно: у кольца вода лишняя
+    const ringOn = built.ring.visible;
+    built.ring.visible = false;
     built.water.visible = false;
     built.fade.visible = false;
     built.world.scale.y = -1;
@@ -992,6 +957,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     built.sky.visible = true;
 
     // 3. основной кадр
+    built.ring.visible = ringOn;
     sh.uPass.value = 0;
     gl.clippingPlanes = built.keepAbove;
     built.water.visible = true;
