@@ -160,7 +160,7 @@ export function panelMaterial(shared: Shared, u: PanelUniforms) {
         float h = uHeight * 0.5;
         // Пока кольцо появляется, каждый экран свёрнут, как бумажный свиток, и раскручивается.
         // Передние экраны раскручиваются раньше задних. В конце всё ровно, как без этого.
-        float lin = clamp((uEnterLin - 0.14 * (1.0 - cos(uTheta)) * 0.5) / 0.86, 0.0, 1.0);
+        float lin = clamp(uEnterLin, 0.0, 1.0);
         float roll = 0.0; // по горизонтали не сворачиваем, только по вертикали (см. ниже)
         float W = r * uWidth;
         float sx = (u + 0.5) * W; // от левого края экрана
@@ -184,12 +184,12 @@ export function panelMaterial(shared: Shared, u: PanelUniforms) {
           dY = q + h * 0.35 * sin(a) - yy;
           dIn += h * 0.35 * (1.0 - cos(a));
         }
-        // лёгкая волна по ткани, затихает к концу появления
-        float flutter = (1.0 - smoothstep(0.1, 0.95, lin)) * 0.16 * h * sin(yRel * 2.4 + u * 5.0 + uEnterLin * 16.0 + uTheta * 3.0);
-        float th = uTheta + u * uWidth + dTan / r;
+        float e = clamp(uEnter, 0.0, 1.0);
+        float settle = smoothstep(0.86, 1.0, e);
+        // пока кольцо встаёт, экраны сомкнуты без зазора (как в DialKit), зазор появляется в конце
+        float th = uTheta + u * uWidth * mix(1.0 / 0.985, 1.0, settle) + dTan / r;
         yRel = (yy + dY) / h;
         float c = ${ENTER.curve.toFixed(3)} * h;
-        float e = clamp(uEnter, 0.0, 1.0);
         float s = yRel * h + mix(-h - ${ENTER.approach.toFixed(3)} * h, uEnterT, e);
         float off;
         if (s <= 0.0) {
@@ -200,12 +200,9 @@ export function panelMaterial(shared: Shared, u: PanelUniforms) {
         }
         // в самом начале лента всплывает из-под воды
         float y = ${ENTER.floor.toFixed(3)} + tractrixHeight(s, c) - (1.0 - smoothstep(0.0, 0.12, e)) * 0.7 * h;
-        float settle = smoothstep(0.86, 1.0, e);
         off *= 1.0 - settle;
         y = mix(y, uLift + h + yRel * h * uSqueeze, settle);
-        // верх и низ ленты стянуты к центру, середина выгнута: экран как ткань на обруче
-        float edge = 1.0 - sqrt(max(0.0, 1.0 - yRel * yRel));
-        r += off - uBend * h * edge - dIn + flutter;
+        r += off - dIn;
         return vec3(r * sin(th) * uWiden, y, r * cos(th));
       }
 
