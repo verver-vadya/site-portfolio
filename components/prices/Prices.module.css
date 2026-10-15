@@ -1,0 +1,230 @@
+.prices {
+  padding-block: var(--s-12) var(--s-16);
+}
+
+/* шапка: крупный заголовок, под ним вводный абзац и условие первых проектов */
+.head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: var(--s-8) var(--s-12);
+  padding-bottom: var(--s-16);
+}
+.title {
+  grid-column: 1 / -1;
+  font-size: var(--fs-2xl);
+}
+.lede {
+  max-width: 34ch;
+  font-size: var(--fs-lg);
+  line-height: 1.35;
+}
+.first {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-3);
+  max-width: 44ch;
+  color: var(--c-muted);
+}
+.first :global(.tag) {
+  color: var(--c-ink);
+}
+
+/* тарифы: три колонки на тонких линиях */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-8) 0;
+  border-top: 1px solid var(--c-line);
+}
+/* строки колонок общие (subgrid): цены и списки стоят на одной высоте, даже если описание длиннее */
+.plan {
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
+  gap: var(--s-8);
+  padding: var(--s-6) var(--s-8) var(--s-8);
+  border-left: 1px solid var(--c-line);
+}
+.plan:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.plan:last-child {
+  padding-right: 0;
+}
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-4);
+}
+.about {
+  display: grid;
+  gap: var(--s-3);
+}
+.name {
+  font-size: var(--fs-lg);
+}
+.fit {
+  max-width: 40ch;
+  font-size: var(--fs-sm);
+}
+
+.price {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-2);
+}
+.from {
+  line-height: 1;
+}
+.num {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.rub {
+  font-weight: 300;
+}
+.usual {
+  font-size: var(--fs-sm);
+}
+
+.rest {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: var(--s-6);
+}
+.list {
+  display: grid;
+  align-content: start;
+  gap: var(--s-2);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--c-line);
+  font-size: var(--fs-sm);
+}
+.list li {
+  padding-left: var(--s-6);
+  text-indent: calc(var(--s-6) * -1);
+}
+.list li::before {
+  content: "—";
+  display: inline-block;
+  width: var(--s-6);
+  text-indent: 0;
+  color: var(--c-muted);
+}
+.go {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: var(--s-2);
+  min-height: 44px;
+}
+.go svg {
+  width: 16px;
+  height: 16px;
+  transition: transform var(--d-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .go:hover svg {
+    transform: translateX(4px);
+  }
+}
+
+/* гарантия, оплата, хостинг: те же три колонки, что у тарифов */
+.promises {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-6) 0;
+  margin-top: var(--s-12);
+  font-size: var(--fs-sm);
+}
+.promises li {
+  display: grid;
+  align-content: start;
+  gap: var(--s-2);
+  padding-inline: var(--s-8);
+}
+.promises li:first-child {
+  padding-left: 0;
+}
+.promises li:last-child {
+  padding-right: 0;
+}
+/* линия над пунктом идёт по колонке тарифа, без отступов */
+.promises li::before {
+  content: "";
+  height: 1px;
+  margin-bottom: var(--s-2);
+  background: var(--c-ink);
+}
+.promises li > span:last-child {
+  max-width: 44ch;
+}
+
+/* планшет: тарифы строками, внутри строки две колонки */
+@media (max-width: 1080px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+  .plan,
+  .plan:first-child,
+  .plan:last-child {
+    grid-row: auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto;
+    gap: var(--s-6) var(--s-12);
+    padding: var(--s-6) 0 var(--s-12);
+    border-left: 0;
+    border-bottom: 1px solid var(--c-line);
+  }
+  .top {
+    grid-column: 1 / -1;
+  }
+  .rest {
+    grid-column: 2;
+    grid-row: 2 / span 2;
+  }
+  .promises {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    column-gap: var(--s-8);
+  }
+  .promises li,
+  .promises li:first-child,
+  .promises li:last-child {
+    padding-inline: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .prices {
+    padding-top: var(--s-8);
+  }
+  .head {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-6);
+    padding-bottom: var(--s-12);
+  }
+  .plan,
+  .plan:first-child,
+  .plan:last-child {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-6);
+    padding-bottom: var(--s-8);
+  }
+  .rest {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .go svg {
+    transition: none;
+  }
+}

@@ -1,0 +1,64 @@
+.policy {
+  padding-block: var(--s-12) var(--s-24);
+}
+.head {
+  display: grid;
+  gap: var(--s-4);
+  margin-bottom: var(--s-16);
+}
+.title {
+  max-width: 20ch;
+  font-size: var(--fs-xl);
+  hyphens: manual;
+}
+
+/* разделы на тонких линиях: слева заголовок, справа текст, как строки на «Обо мне» */
+.list {
+  border-bottom: 1px solid var(--c-line);
+}
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+  align-items: baseline;
+  gap: var(--s-3) var(--s-12);
+  padding-block: var(--s-8);
+  border-top: 1px solid var(--c-line);
+}
+.h2 {
+  max-width: 16ch;
+  font-size: var(--fs-lg);
+  line-height: 1.25;
+}
+.text {
+  max-width: var(--text-max);
+  overflow-wrap: break-word;
+}
+.line {
+  text-decoration-color: currentColor;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: var(--s-8);
+  text-decoration: none;
+}
+
+@media (max-width: 960px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+    padding-block: var(--s-6);
+  }
+}
+@media (max-width: 720px) {
+  .policy {
+    padding-top: var(--s-8);
+  }
+  .head {
+    margin-bottom: var(--s-8);
+  }
+}
+.nowrap {
+  white-space: nowrap;
+}

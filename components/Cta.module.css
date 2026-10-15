@@ -28,7 +28,4 @@
   .cta {
     grid-template-columns: 1fr;
   }
-  .row :global(.btn) {
-    flex: 1 0 100%;
-  }
 }

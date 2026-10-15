@@ -1,0 +1,102 @@
+/* Ширина надписи --ww, базовая линия на 60 % высоты экрана. По этим же цифрам сцена ставит
+   свою надпись, поэтому подмена SVG на WebGL незаметна. 588/4097 и 604/4097 — пропорции букв. */
+.hero {
+  --ww: min(78vw, 1800px);
+  position: relative;
+  height: calc(100svh - var(--header-h));
+  min-height: 520px;
+  overflow: clip;
+}
+
+.top {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: end;
+  gap: var(--s-4) var(--s-12);
+  padding-top: clamp(var(--s-6), 4svh, var(--s-12));
+}
+.title {
+  max-width: 20ch;
+  font-size: clamp(1.625rem, min(1rem + 2.2vw, 6.4svh), 3.25rem);
+}
+.lede {
+  max-width: 36ch;
+  justify-self: end;
+  font-size: var(--fs-md);
+}
+
+.word {
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  width: var(--ww);
+  color: var(--c-ink);
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition: opacity 600ms var(--ease-soft);
+}
+.svg {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+/* верх надписи выше базовой линии на 588 единиц из 4097 ширины */
+.svg:first-child {
+  top: calc(var(--ww) * -588 / 4097);
+}
+/* отражение: та же надпись, перевёрнутая у базовой линии и уходящая в воду */
+.reflection {
+  top: calc(var(--ww) * -588 / 4097);
+  transform-origin: 50% calc(100% * 588 / 604);
+  transform: scaleY(-1);
+  opacity: 0.32;
+  mask-image: linear-gradient(to bottom, transparent 10%, #000 100%);
+}
+:global(html.scene-ready) .word {
+  opacity: 0;
+}
+
+.hint {
+  position: absolute;
+  left: 50%;
+  bottom: var(--s-6);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+/* подсказка растворяется, как только начали листать (где браузер умеет анимацию по прокрутке) */
+@supports (animation-timeline: scroll()) {
+  .hint {
+    animation: hint-out linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 22vh;
+  }
+}
+@keyframes hint-out {
+  to {
+    opacity: 0;
+  }
+}
+.withScene {
+  display: none;
+}
+:global(html.scene-on) .withScene {
+  display: inline;
+}
+:global(html.scene-on) .noScene {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .hero {
+    --ww: 88vw;
+  }
+  .top {
+    grid-template-columns: 1fr;
+  }
+  .lede {
+    justify-self: start;
+    font-size: var(--fs-sm);
+  }
+}

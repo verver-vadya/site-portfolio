@@ -1,0 +1,112 @@
+/* Высота блока — сколько листать, пока кольцо стоит на экране */
+.stage {
+  display: none;
+  position: relative;
+  height: 170svh;
+  touch-action: pan-y; /* по горизонтали палец крутит кольцо, по вертикали листает страницу */
+}
+:global(html.scene-on) .stage {
+  display: block;
+}
+
+.sticky {
+  isolation: isolate;
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-block: calc(var(--header-h) + var(--s-4)) var(--s-8);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--d-close) var(--ease-close), visibility 0s linear var(--d-close);
+}
+.sticky[data-shown] {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--d-open) var(--ease-soft), visibility 0s;
+}
+
+.hint {
+  text-align: center;
+  padding-inline: var(--gutter);
+}
+.touch {
+  display: none;
+}
+@media (hover: none) {
+  .mouse {
+    display: none;
+  }
+  .touch {
+    display: inline;
+  }
+}
+
+/* под подписью затемнение снизу, чтобы текст читался поверх отражений */
+.sticky::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 42%;
+  z-index: -1;
+  background: linear-gradient(to top, color-mix(in srgb, var(--c-paper) 88%, transparent), transparent);
+  pointer-events: none;
+}
+.caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-6);
+}
+.info {
+  display: grid;
+  gap: var(--s-2);
+  max-width: 40ch;
+}
+.title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-xl);
+  line-height: var(--lh-head);
+  animation: caption-in 500ms var(--ease-soft) both;
+}
+.meta {
+  font-size: var(--fs-sm);
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+.actions :global(.btn) {
+  margin-left: var(--s-2);
+}
+
+@keyframes caption-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .title {
+    animation-name: caption-fade;
+  }
+  @keyframes caption-fade {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .actions {
+    width: 100%;
+  }
+  .actions :global(.btn) {
+    flex: 1;
+  }
+}

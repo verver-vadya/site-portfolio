@@ -5,7 +5,10 @@ import { Footer } from "@/components/Footer";
 import { Intro, introScript } from "@/components/motion/Intro";
 import { Motion } from "@/components/motion/Motion";
 import { SceneRoot } from "@/components/scene/SceneRoot";
+import { getCases } from "@/lib/cases";
+import type { Img } from "@/lib/images";
 import { BASE_PATH } from "@/lib/paths";
+import type { SceneCase } from "@/lib/scene-bus";
 import "./globals.css";
 
 // Шрифты скачиваются при сборке и лежат на самом сайте (без запросов к Google у посетителя)
@@ -31,6 +34,22 @@ const themeScript = `(function(){var d=document.documentElement;d.classList.add(
 var l=t==="light"||(t==="system"&&matchMedia("(prefers-color-scheme: light)").matches);d.dataset.theme=l?"light":"dark";}catch(e){}
 setTimeout(function(){if(!window.__motion)d.classList.add("reveal-all")},3000)})();`;
 
+// Для 3D-сцены: скриншоты работ для панелей кольца (средний размер и самый крупный для раскрытия)
+function sceneCases(): SceneCase[] {
+  const shot = (img: Img, min: number) => ({
+    src: img.widths.find((w) => w.w >= min)?.url ?? img.src,
+    large: img.widths[img.widths.length - 1].url,
+    width: img.width,
+    height: img.height,
+  });
+  return getCases().map((c) => ({
+    slug: c.slug,
+    title: c.title,
+    shots: c.desktop.map((img) => shot(img, 960)),
+    phone: c.phone.map((img) => shot(img, 520)),
+  }));
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru" data-theme="dark" className={`${display.variable} ${text.variable}`} suppressHydrationWarning>
@@ -42,7 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Перейти к содержимому
         </a>
         <Header />
-        <SceneRoot />
+        <SceneRoot cases={sceneCases()} />
         <main id="main">{children}</main>
         <Footer />
         <Intro />

@@ -148,7 +148,13 @@ function watchPage(page, where, origin) {
     }
   });
   page.on("requestfailed", (req) => {
-    if (req.url().startsWith(origin) && !req.url().includes("__check_submit")) problems.push(`файл не загрузился: ${req.url().slice(origin.length)}`);
+    if (!req.url().startsWith(origin) || req.url().includes("__check_submit")) return;
+    // Next.js заранее подгружает страницы по ссылкам (перед этим проверяет адрес запросом HEAD);
+    // когда проверка уходит со страницы, такие запросы обрываются. Это не битый файл
+    const h = req.headers();
+    const prefetch = h.rsc || h["next-router-prefetch"] || req.method() === "HEAD";
+    if (req.failure()?.errorText === "net::ERR_ABORTED" && prefetch) return;
+    problems.push(`файл не загрузился: ${req.url().slice(origin.length)}`);
   });
   return () => [...new Set(problems)].forEach((p) => error(where, p));
 }

@@ -80,6 +80,18 @@
     display: block;
   }
 }
+/* до 420 пикселей пункты чуть плотнее, иначе «Связаться» не влезает */
+@media (max-width: 420px) {
+  .in {
+    gap: var(--s-3);
+  }
+  .list {
+    gap: var(--s-3);
+  }
+  .item {
+    letter-spacing: 0.02em;
+  }
+}
 @media (max-width: 360px) {
   .list {
     gap: var(--s-4);

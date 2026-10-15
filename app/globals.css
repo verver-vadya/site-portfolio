@@ -119,7 +119,10 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* над холстом 3D-сцены (он fixed, z-index 0), под шапкой */
 main {
+  position: relative;
+  z-index: 1;
   flex: 1 0 auto;
 }
 
@@ -396,4 +399,62 @@ html.js:not(.reveal-all) [data-reveal]:not(.is-in) {
 /* первый раздел внутренней страницы: без линии сверху и ближе к шапке */
 #main > section:first-child:not(.hero) {
   border-top: 0;
+}
+
+/* Курсор-ромб (components/motion/Motion.tsx): системный курсор прячем, в полях ввода он остаётся */
+html.cursor-on,
+html.cursor-on * {
+  cursor: none !important;
+}
+html.cursor-on :is(input:not([type="checkbox"], [type="radio"], [type="submit"]), textarea, select, [contenteditable]) {
+  cursor: text !important;
+}
+html.cursor-on select {
+  cursor: default !important;
+}
+
+/* Ромб-шторка между страницами (components/motion/Motion.tsx): старая страница чуть отступает
+   и темнеет, новая раскрывается ромбом из точки клика. Шапка стоит на месте. */
+::view-transition {
+  pointer-events: none;
+}
+html.is-curtain::view-transition-old(root) {
+  animation: curtain-out 620ms var(--ease-soft) both;
+}
+html.is-curtain::view-transition-new(root) {
+  animation: curtain-in 620ms var(--ease-soft) both;
+}
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header) {
+  display: none;
+}
+::view-transition-new(site-header) {
+  animation: none;
+}
+@keyframes curtain-out {
+  to {
+    opacity: 0.4;
+    transform: scale(0.985);
+  }
+}
+@keyframes curtain-in {
+  from {
+    clip-path: polygon(
+      var(--vt-x) var(--vt-y),
+      var(--vt-x) var(--vt-y),
+      var(--vt-x) var(--vt-y),
+      var(--vt-x) var(--vt-y)
+    );
+  }
+  to {
+    clip-path: polygon(
+      var(--vt-x) calc(var(--vt-y) - var(--vt-r)),
+      calc(var(--vt-x) + var(--vt-r)) var(--vt-y),
+      var(--vt-x) calc(var(--vt-y) + var(--vt-r)),
+      calc(var(--vt-x) - var(--vt-r)) var(--vt-y)
+    );
+  }
 }

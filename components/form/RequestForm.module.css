@@ -1,0 +1,277 @@
+.form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-8) var(--s-6);
+}
+
+.field {
+  display: grid;
+  align-content: start;
+  gap: var(--s-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.wide {
+  grid-column: 1 / -1;
+}
+.field legend {
+  float: left; /* чтобы legend встал в сетку, как label */
+  width: 100%;
+  margin-bottom: var(--s-2);
+  padding: 0;
+}
+.hint {
+  font-size: var(--fs-xs);
+}
+
+.field input:not([type="checkbox"], [type="radio"]),
+.field textarea {
+  width: 100%;
+  min-height: 52px;
+  padding: var(--s-3) var(--s-4);
+  border: 1.5px solid var(--c-field);
+  border-radius: var(--radius-plate);
+  background: var(--c-paper);
+  color: var(--c-ink);
+  font: inherit;
+  transition: border-color var(--d-fast) var(--ease-out);
+}
+.field textarea {
+  min-height: 128px;
+  resize: vertical;
+}
+@media (hover: hover) {
+  .field input:not([type="checkbox"], [type="radio"]):hover,
+  .field textarea:hover {
+    border-color: var(--c-ink);
+  }
+}
+.field input:focus-visible,
+.field textarea:focus-visible {
+  border-color: var(--c-ink);
+  outline-offset: 2px;
+}
+.field [aria-invalid="true"]:not([type="radio"]) {
+  border-color: var(--c-danger);
+  box-shadow: inset 0 0 0 1px var(--c-danger);
+}
+.field :global(.field__error) {
+  color: var(--c-danger);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+}
+
+/* варианты: бирки-переключатели */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.choice {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: var(--s-4);
+  border: 1.5px solid var(--c-field);
+  border-radius: var(--radius-pill);
+  background: var(--c-paper);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out),
+    border-color var(--d-fast) var(--ease-out), transform var(--d-fast) var(--ease-out);
+}
+.choice input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .choice:hover {
+    border-color: var(--c-ink);
+  }
+  .choice:has(input:checked):hover {
+    background: var(--c-press);
+    border-color: var(--c-press);
+  }
+}
+.choice:active {
+  transform: scale(0.97);
+}
+.choice:has(input:checked) {
+  border-color: var(--c-ink);
+  background: var(--c-ink);
+  color: var(--c-paper);
+}
+.choice:has(input:focus-visible) {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 3px;
+}
+.choice:has(input[aria-invalid="true"]) {
+  border-color: var(--c-danger);
+}
+
+/* согласие: галочка и подпись в строку */
+.check {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--s-3);
+}
+/* своя галочка: рамка как у полей, отмеченная — квадрат цвета текста внутри */
+.check input {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  border: 1.5px solid var(--c-field);
+  border-radius: 4px;
+  background: var(--c-paper);
+  cursor: pointer;
+  transition: border-color var(--d-fast) var(--ease-out), background-color var(--d-fast) var(--ease-out),
+    transform var(--d-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .check input:hover {
+    border-color: var(--c-ink);
+  }
+}
+.check input:active {
+  transform: scale(0.92);
+}
+.check input:checked {
+  border-color: var(--c-ink);
+  background: var(--c-ink);
+  box-shadow: inset 0 0 0 3.5px var(--c-paper);
+}
+.check input[aria-invalid="true"] {
+  border-color: var(--c-danger);
+}
+.check label {
+  max-width: 60ch;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.errorWide {
+  grid-column: 1 / -1;
+}
+.line {
+  text-decoration-color: currentColor;
+}
+
+.trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.send {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-4);
+  padding-top: var(--s-2);
+}
+.send :global(.btn) {
+  min-width: 15rem;
+}
+
+/* итог отправки: плашка с тонкой чертой слева */
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  max-width: 62ch;
+  padding: var(--s-3) var(--s-4);
+  border-left: 2px solid currentColor;
+  border-radius: 0 var(--radius-plate) var(--radius-plate) 0;
+  background: var(--c-plate);
+  font-size: var(--fs-sm);
+}
+.status[hidden] {
+  display: none;
+}
+.status[data-state="error"] {
+  color: var(--c-danger);
+}
+.status[data-state="success"] {
+  border-left-color: var(--c-success);
+  padding-block: var(--s-4);
+}
+
+/* знак собирается: половины съезжаются на 14 px (в единицах viewBox: 40 px = 100, значит 35) */
+.mark {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  color: var(--c-ink);
+  overflow: visible;
+}
+.markTop,
+.markBottom {
+  animation: 500ms var(--ease-soft) both;
+}
+.markTop {
+  animation-name: fromTop;
+}
+.markBottom {
+  animation-name: fromBottom;
+}
+@keyframes fromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-35px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(35px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 720px) {
+  .form {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s-6);
+  }
+  .send {
+    justify-items: stretch;
+  }
+  .send :global(.btn) {
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .choice {
+    transition-property: background-color, color, border-color;
+  }
+  .markTop,
+  .markBottom {
+    animation-name: fade;
+  }
+}
