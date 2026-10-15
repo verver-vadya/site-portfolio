@@ -91,6 +91,37 @@
   margin-left: var(--s-2);
 }
 
+/* точки работ (Pasito) в цветах темы */
+.dots {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+.stepper {
+  --pill-dot-size: 8px;
+  --pill-active-width: 28px;
+  --pill-gap: 8px;
+  --pill-duration: 500ms;
+  --pill-easing: var(--ease-soft);
+  --pill-bg: color-mix(in srgb, var(--c-ink) 28%, transparent);
+  --pill-active-bg: var(--c-ink);
+  --pill-fill-bg: var(--c-ink);
+  --pill-container-bg: transparent;
+  --pill-container-border: transparent;
+  padding: 0;
+}
+/* пока кольцо шагает само, активная точка заполняется до следующего шага */
+.filling {
+  --pill-active-bg: color-mix(in srgb, var(--c-ink) 35%, transparent);
+}
+/* точка — маленькая цель для пальца: невидимое поле нажатия вокруг */
+.stepper :global(.pasito-track) {
+  padding-block: 8px;
+}
+.stepper :global(.pasito-step:focus-visible) {
+  outline: 2px solid var(--c-focus, var(--c-ink));
+}
+
 @keyframes caption-in {
   from {
     opacity: 0;

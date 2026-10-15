@@ -1,0 +1,26 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: 0 var(--s-1);
+  border: 0;
+  background: none;
+  color: var(--c-muted, inherit);
+  font: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: color var(--d-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .btn:hover {
+    color: var(--c-ink);
+  }
+}
+.btn:active {
+  opacity: 0.6;
+}
+.text {
+  min-width: 11ch;
+  text-align: left;
+}

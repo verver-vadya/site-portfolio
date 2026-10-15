@@ -12,6 +12,10 @@
 - **Next.js**, **React** — лицензия MIT.
 - **three.js** — лицензия MIT.
 - **@react-three/fiber** — лицензия MIT.
+- **DialKit** (Josh Puckett) — панель подбора движения кольца по адресу с ?dial, лицензия MIT.
+- **Bloom** (`bloom-menu`, Josh Puckett) — меню на телефоне, лицензия MIT; тянет **framer-motion / motion** (MIT).
+- **Pasito** (Josh Puckett) — точки работ под кольцом, лицензия MIT.
+- **morphicons** (guillermolg00) — иконки темы и «Скопировать» перетекают одна в другую, лицензия MIT; рисунки иконок из **Lucide** (ISC).
 - **Lenis** (плавная прокрутка) — лицензия MIT.
 - **marked** (тексты кейсов из Markdown) — лицензия MIT.
 - **yaml** — лицензия ISC.
