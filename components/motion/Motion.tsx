@@ -60,6 +60,75 @@ export function Motion() {
     };
   }, []);
 
+  // ---------- доводка между надписью и кольцом ----------
+  // Между первым экраном и кольцом страница не останавливается на полпути: если человек
+  // перестал листать вниз, она доезжает до кольца целиком, вместе с подписью и кнопками;
+  // если листал вверх — до надписи.
+  useEffect(() => {
+    if (trim(pathname) !== "/") return;
+    let last = scrollY;
+    let dir = 0;
+    let timer = 0;
+    let touching = false;
+    let snapping = false;
+    const settle = () => {
+      timer = 0;
+      const root = document.documentElement;
+      const stage = document.querySelector<HTMLElement>("[data-scene-stage]");
+      if (touching || snapping || !stage || !root.classList.contains("scene-on")) return;
+      if (lenis.current?.isScrolling) return void (timer = window.setTimeout(settle, 120));
+      const top = Math.round(stage.getBoundingClientRect().top + scrollY);
+      const y = scrollY;
+      if (y <= 2 || y >= top - 2) return;
+      const to = dir < 0 ? 0 : top;
+      snapping = true;
+      const done = () => {
+        snapping = false;
+        last = scrollY;
+      };
+      if (lenis.current) {
+        lenis.current.scrollTo(to, { duration: 0.9, onComplete: done });
+      } else {
+        scrollTo({ top: to, behavior: reduced() ? "auto" : "smooth" });
+        const off = () => {
+          removeEventListener("scrollend", off);
+          clearTimeout(guard);
+          done();
+        };
+        const guard = window.setTimeout(off, 1500);
+        addEventListener("scrollend", off);
+      }
+    };
+    const onScroll = () => {
+      const y = scrollY;
+      if (y !== last) dir = y > last ? 1 : -1;
+      last = y;
+      if (snapping) return;
+      clearTimeout(timer);
+      timer = window.setTimeout(settle, 160);
+    };
+    const onTouchStart = () => {
+      touching = true;
+      clearTimeout(timer);
+    };
+    const onTouchEnd = () => {
+      touching = false;
+      clearTimeout(timer);
+      timer = window.setTimeout(settle, 160);
+    };
+    addEventListener("scroll", onScroll, { passive: true });
+    addEventListener("touchstart", onTouchStart, { passive: true });
+    addEventListener("touchend", onTouchEnd, { passive: true });
+    addEventListener("touchcancel", onTouchEnd, { passive: true });
+    return () => {
+      clearTimeout(timer);
+      removeEventListener("scroll", onScroll);
+      removeEventListener("touchstart", onTouchStart);
+      removeEventListener("touchend", onTouchEnd);
+      removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [pathname]);
+
   // ---------- ромб-шторка ----------
   // Ссылку внутри сайта перехватываем раньше next/link: снимок старой страницы, переход,
   // снимок новой, и новая раскрывается ромбом поверх старой (стили в globals.css).

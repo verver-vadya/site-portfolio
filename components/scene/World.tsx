@@ -241,6 +241,9 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     autoAt: 6,
     rise: 0, // появление кольца 0..1 после сглаживания
     prevRise: 0,
+    passKey: "", // отражение и подводный проход с прошлого кадра (см. «три прохода»)
+    spin: 0.9, // доворот кольца при подъёме, сглаженный
+    leave: null as null | { from: number; t: number }, // кольцо ложится обратно на воду
     enterT: 0, // время появления 0..1, без сглаживания
     enterWant: false,
     front: -1,
@@ -483,6 +486,8 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     emit("cursor", { mode: null });
     document.body.style.cursor = "";
     host.dataset.mode = "front";
+    // подпись и затемнение внизу страницы кейса ждут, пока панель передаст ей кадр (см. go ниже)
+    document.documentElement.classList.add("case-handoff");
     setBusy(true);
   };
 
@@ -504,6 +509,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     built.fade.visible = false;
     s.expand = null;
     host.dataset.mode = "";
+    document.documentElement.classList.remove("case-handoff");
     setBusy(false);
   };
 
@@ -802,12 +808,29 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     // прокруткой: 2,9 секунды, быстро в начале и долго, мягко в конце. Назад к надписи — ложится
     // обратно быстрее.
     if (p > 0.55) s.enterWant = true;
-    else if (p < 0.35) s.enterWant = false;
-    s.enterT = clamp(s.enterT + (s.enterWant ? dt / 2.9 : -dt / 1.1));
+    else if (p < 0.48) s.enterWant = false;
     s.prevRise = s.rise;
-    s.rise = 1 - Math.pow(1 - s.enterT, 5.65);
+    if (s.enterWant) {
+      // снова листают вниз, пока кольцо ложилось: продолжаем подъём с той же высоты
+      if (s.leave) s.enterT = 1 - Math.pow(1 - s.rise, 1 / 5.65);
+      s.leave = null;
+      s.enterT = clamp(s.enterT + dt / 2.9);
+      s.rise = 1 - Math.pow(1 - s.enterT, 5.65);
+    } else if (s.rise > 0) {
+      // Назад к надписи кольцо ложится на воду за 1,2 секунды, плавно в начале и в конце.
+      // Обратный ход появления так не годится: он почти секунду стоит на месте, а потом резко падает
+      if (!s.leave) s.leave = { from: s.rise, t: 0 };
+      s.leave.t = clamp(s.leave.t + dt / (0.5 + 0.7 * s.leave.from));
+      const k = s.leave.t;
+      s.rise = s.leave.from * (1 - (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2));
+      if (s.rise <= 0.001) {
+        s.rise = 0;
+        s.enterT = 0;
+      }
+    }
     built.enterU.uEnter.value = s.rise;
-    built.enterU.uEnterLin.value = s.enterT;
+    // свиток сворачивается обратно вместе с тем, как кольцо ложится
+    built.enterU.uEnterLin.value = s.leave ? s.rise : s.enterT;
     built.ring.position.set(0, 0, -built.ringInfo.radius);
     built.ring.visible = s.rise > 0.001;
     // вращение: перетаскивание, инерция, пружина к ближайшей панели, сам шагает раз в несколько секунд
@@ -835,7 +858,9 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       s.vel = s.drag.v;
     }
     // пока поднимается, кольцо доворачивается и замедляется: подъём по спирали
-    const spin = 0.9 * (1 - s.enterT) * (1 - s.enterT);
+    const spinTo = s.leave ? 0.9 * (1 - s.rise) * (1 - s.rise) : 0.9 * (1 - s.enterT) * (1 - s.enterT);
+    s.spin += (spinTo - s.spin) * (1 - Math.exp(-dt * 10));
+    const spin = s.spin;
     // при вращении экраны не размываются и не гнутся
     const blur = 0;
 
@@ -912,6 +937,8 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
           ex.done = true;
           const go = () => {
             host.dataset.mode = "fade";
+            // холст растворяется, а подпись с кнопками плавно поднимается на странице
+            document.documentElement.classList.remove("case-handoff");
             window.setTimeout(finishExpand, 380);
           };
           if (img && ok) img.decode().then(go, go);
@@ -938,23 +965,41 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     built.ring.visible = false;
     built.water.visible = false;
     built.fade.visible = false;
-    built.world.scale.y = -1;
-    built.world.updateMatrixWorld();
-    sh.uPass.value = 1;
-    gl.clippingPlanes = built.keepBelow;
-    gl.setClearColor(s.colors.paper);
-    gl.setRenderTarget(built.reflect);
-    gl.render(built.scene, camera);
+    // Когда надпись ушла под воду, в отражении и под водой остаётся только небо: пока камера,
+    // цвета и размер кадра те же, эти два прохода дают ту же картинку, и их можно не рисовать
+    camera.updateMatrixWorld();
+    const passKey = built.wordGroup.visible
+      ? ""
+      : [
+          camera.matrixWorld.elements.join(),
+          camera.projectionMatrix.elements.join(),
+          s.colors.paper.getHex(),
+          sh.uDeep.value.getHex(),
+          sh.uGlow.value.getHex(),
+          built.reflect.width,
+          built.reflect.height,
+        ].join("|");
+    const reuse = passKey !== "" && passKey === s.passKey;
+    s.passKey = passKey;
+    if (!reuse) {
+      built.world.scale.y = -1;
+      built.world.updateMatrixWorld();
+      sh.uPass.value = 1;
+      gl.clippingPlanes = built.keepBelow;
+      gl.setClearColor(s.colors.paper);
+      gl.setRenderTarget(built.reflect);
+      gl.render(built.scene, camera);
 
-    // 2. под водой: только то, что ниже поверхности, без неба
-    built.world.scale.y = 1;
-    built.world.updateMatrixWorld();
-    sh.uPass.value = 2;
-    built.sky.visible = false;
-    gl.setClearColor(sh.uDeep.value);
-    gl.setRenderTarget(built.refract);
-    gl.render(built.scene, camera);
-    built.sky.visible = true;
+      // 2. под водой: только то, что ниже поверхности, без неба
+      built.world.scale.y = 1;
+      built.world.updateMatrixWorld();
+      sh.uPass.value = 2;
+      built.sky.visible = false;
+      gl.setClearColor(sh.uDeep.value);
+      gl.setRenderTarget(built.refract);
+      gl.render(built.scene, camera);
+      built.sky.visible = true;
+    }
 
     // 3. основной кадр
     built.ring.visible = ringOn;
