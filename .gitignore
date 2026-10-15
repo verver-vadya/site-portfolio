@@ -7,4 +7,9 @@ node_modules/
 .check/
 .base-site/
 dist/
-.astro/
+.dist-*/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+# картинки кейсов в WebP разных размеров: делает scripts/images.mjs при сборке
+public/img/
