@@ -20,14 +20,14 @@ export function CaseCard({
         <Shot
           className={`${s.shot} ${s.desktop}`}
           img={c.desktop[0]}
-          alt={`«${c.title}» на компьютере`}
+          alt="" // ссылку называет заголовок карточки; второй, скрытый скриншот не зачитываем
           sizes="(max-width: 720px) 80vw, (max-width: 1200px) 42vw, 28vw"
           priority={priority}
         />
         <Shot
           className={`${s.shot} ${s.phone}`}
           img={c.phone[0]}
-          alt={`«${c.title}» на телефоне`}
+          alt=""
           sizes="(max-width: 720px) 26vw, 10vw"
         />
       </div>

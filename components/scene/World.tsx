@@ -48,6 +48,7 @@ type Panel = {
 
 type Props = {
   cases: SceneCase[];
+  home: boolean; // открыта главная (на других страницах надписи-ориентира нет)
   navigate: (href: string) => void;
   host: HTMLElement;
   onReady: () => void;
@@ -64,7 +65,7 @@ function readColors() {
   };
 }
 
-export function World({ cases, navigate, host, onReady, setBusy }: Props) {
+export function World({ cases, home, navigate, host, onReady, setBusy }: Props) {
   const gl = useThree((s) => s.gl);
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
@@ -213,11 +214,13 @@ export function World({ cases, navigate, host, onReady, setBusy }: Props) {
     front: -1,
     hovered: -1,
     pointer: { x: 0, y: 0, inside: false, moved: 0, lastWater: null as THREE.Vector3 | null },
-    drag: { active: false, x: 0, startX: 0, startY: 0, travel: 0, lastT: 0, v: 0 },
+    drag: { active: false, id: -1, x: 0, startX: 0, startY: 0, travel: 0, lastT: 0, v: 0 },
     expand: null as null | {
       panel: Panel;
+      from: string; // адрес, с которого раскрываем: если человек ушёл сам, раскрытие отменяется
       t: number;
       navigated: boolean;
+      arrived: boolean; // уже открыта страница этого кейса
       done: boolean;
       waited: number;
       fading: boolean;
@@ -271,15 +274,23 @@ export function World({ cases, navigate, host, onReady, setBusy }: Props) {
     const wpp = (2 * D * TAN) / H;
 
     // надпись в HTML (запасной вариант) задаёт место: сцена ставит свою точно на неё
+    // Не на главной ориентира нет: оставляем прежнее место надписи, при возврате на главную
+    // раскладка пересчитается (home в зависимостях)
     const anchor = document.querySelector<SVGElement>("[data-scene-word]");
     const r = anchor?.getBoundingClientRect();
-    const rect = r && r.width
-      ? { left: r.left, top: r.top + scrollY, width: r.width, height: r.height }
-      : { left: W * 0.11, top: H * 0.58 - W * 0.78 * (WORD_H / 4097), width: W * 0.78, height: W * 0.78 * (WORD_H / 4097) };
-    const baseline = rect.top + (rect.height * WORD_ASC) / WORD_H;
-    const camY = Math.max(0.03, (baseline - H / 2) * wpp);
-    const scale = (rect.width * wpp) / 4097;
-    const left = (rect.left - W / 2) * wpp;
+    const prev = st.current.layout;
+    let camY: number, scale: number, left: number;
+    if (!(r && r.width) && prev) {
+      ({ camY, scale, left } = prev);
+    } else {
+      const rect = r && r.width
+        ? { left: r.left, top: r.top + scrollY, width: r.width, height: r.height }
+        : { left: W * 0.11, top: H * 0.58 - W * 0.78 * (WORD_H / 4097), width: W * 0.78, height: W * 0.78 * (WORD_H / 4097) };
+      const baseline = rect.top + (rect.height * WORD_ASC) / WORD_H;
+      camY = Math.max(0.03, (baseline - H / 2) * wpp);
+      scale = (rect.width * wpp) / 4097;
+      left = (rect.left - W / 2) * wpp;
+    }
     st.current.layout = { W, H, D, wpp, camY, scale, left };
 
     built.shared.uReflH.value = Math.max(0.6, WORD_H * scale * 1.5);
@@ -320,7 +331,7 @@ export function World({ cases, navigate, host, onReady, setBusy }: Props) {
     const rs = Math.max(0.75, Math.min(1, 1.5 / pr));
     built.reflect.setSize(Math.round(W * pr * rs), Math.round(H * pr * rs));
     built.refract.setSize(Math.round(W * pr * 0.5), Math.round(H * pr * 0.5));
-  }, [size, built, camera, gl]);
+  }, [size, built, camera, gl, home]);
 
   // ---------- скриншоты на панели ----------
   useEffect(() => {
@@ -410,7 +421,7 @@ export function World({ cases, navigate, host, onReady, setBusy }: Props) {
     mat.depthTest = false;
     p.mesh.renderOrder = 999;
     built.fade.visible = true;
-    s.expand = { panel: p, t: 0, navigated: false, done: false, waited: 0, fading: false, mixAt: -1, needMix: false };
+    s.expand = { panel: p, from: location.pathname, t: 0, navigated: false, arrived: false, done: false, waited: 0, fading: false, mixAt: -1, needMix: false };
     // На странице кейса первым стоит первый экран работы. Если на панели другой экран,
     // по дороге панель плавно меняет картинку, чтобы передать странице ровно тот же кадр.
     const first = cases[p.caseIndex]?.shots[0];
@@ -465,6 +476,17 @@ export function World({ cases, navigate, host, onReady, setBusy }: Props) {
       el instanceof Element && !!el.closest("a, button, input, textarea, select, label, summary, [data-scene-ignore]");
 
     const ringReady = () => s.rise > 0.97 && !s.expand && sceneState.live;
+    // Сцена отвечает только там, где её видно: над первым экраном и над кольцом главной.
+    // На других страницах и над списком работ (он закрывает сцену) клики — это клики по странице.
+    const over = (e: PointerEvent, sel: string) => e.target instanceof Element && !!e.target.closest(sel);
+    const onWater = (e: PointerEvent) => over(e, "[data-scene-hero], [data-scene-stage]");
+    const onRing = (e: PointerEvent) => over(e, "[data-scene-stage]");
+    const unhover = () => {
+      if (s.hovered < 0) return;
+      s.hovered = -1;
+      emit("cursor", { mode: null });
+      document.body.style.cursor = "";
+    };
 
     const setNdc = (e: PointerEvent) => {
       const L = s.layout;
@@ -506,6 +528,12 @@ export function World({ cases, navigate, host, onReady, setBusy }: Props) {
     };
 
     const onMove = (e: PointerEvent) => {
+      if (s.drag.active && e.pointerId !== s.drag.id) return;
+      if (!s.drag.active && !onWater(e)) {
+        s.pointer.lastWater = null;
+        unhover();
+        return;
+      }
       if (!setNdc(e)) return;
       s.pointer.inside = true;
       if (s.drag.active) {
@@ -533,7 +561,8 @@ export function World({ cases, navigate, host, onReady, setBusy }: Props) {
           s.pointer.lastWater = hit.clone();
         }
       }
-      if (ringReady() && e.pointerType === "mouse") {
+      if (!onRing(e)) unhover();
+      else if (ringReady() && e.pointerType === "mouse") {
         const i = interactive(e.target) ? -1 : pickPanel();
         if (i !== s.hovered) {
           s.hovered = i;
@@ -545,13 +574,15 @@ export function World({ cases, navigate, host, onReady, setBusy }: Props) {
     };
 
     const onDown = (e: PointerEvent) => {
-      if (e.button !== 0 || interactive(e.target) || !setNdc(e)) return;
-      if (ringReady()) {
+      // второй палец: это не перетаскивание кольца (например, увеличение страницы)
+      if (s.drag.active && e.pointerId !== s.drag.id) return onCancel();
+      if (e.button !== 0 || interactive(e.target) || !onWater(e) || !setNdc(e)) return;
+      if (ringReady() && onRing(e)) {
         const i = pickPanel();
         const L = s.layout!;
         // за кольцо можно взяться на его высоте; ниже — это вода
         if (i >= 0 || Math.abs(e.clientY - L.H * 0.45) < L.H * 0.3) {
-          s.drag = { active: true, x: e.clientX, startX: e.clientX, startY: e.clientY, travel: 0, lastT: s.time * 1000, v: 0 };
+          s.drag = { active: true, id: e.pointerId, x: e.clientX, startX: e.clientX, startY: e.clientY, travel: 0, lastT: s.time * 1000, v: 0 };
           s.mode = "drag";
           s.vel = 0;
           s.lastInput = s.time;
@@ -563,7 +594,7 @@ export function World({ cases, navigate, host, onReady, setBusy }: Props) {
     };
 
     const onUp = (e: PointerEvent) => {
-      if (!s.drag.active) return;
+      if (!s.drag.active || e.pointerId !== s.drag.id) return;
       s.drag.active = false;
       const tap = s.drag.travel < 6 && Math.abs(e.clientY - s.drag.startY) < 6;
       if (tap && setNdc(e) && ringReady()) {
@@ -577,22 +608,18 @@ export function World({ cases, navigate, host, onReady, setBusy }: Props) {
       s.mode = "inertia";
     };
 
-    const onCancel = () => {
-      if (!s.drag.active) return;
+    function onCancel(e?: PointerEvent) {
+      if (!s.drag.active || (e && e.pointerId !== s.drag.id)) return;
       s.drag.active = false;
       s.vel = 0;
       s.mode = "spring";
       s.target = Math.round(s.rot / built.ringInfo.step) * built.ringInfo.step;
-    };
+    }
 
     const onLeave = () => {
       s.pointer.inside = false;
       s.pointer.lastWater = null;
-      if (s.hovered >= 0) {
-        s.hovered = -1;
-        emit("cursor", { mode: null });
-        document.body.style.cursor = "";
-      }
+      unhover();
     };
 
     const offStep = on("ring-step", ({ dir }) => {
@@ -708,7 +735,9 @@ export function World({ cases, navigate, host, onReady, setBusy }: Props) {
       const acc = k * (s.target - s.rot) - 2 * Math.sqrt(k) * s.vel;
       s.vel += acc * dt;
       s.rot += s.vel * dt;
-      const idle = s.time - s.lastInput > 7 && s.hovered < 0 && !s.expand && s.rise > 0.97;
+      // само не крутится, пока на кольце курсор или фокус с клавиатуры (кнопки подписи)
+      const focused = !!document.activeElement?.closest("[data-scene-stage]");
+      const idle = s.time - s.lastInput > 7 && s.hovered < 0 && !focused && !s.expand && s.rise > 0.97;
       if (idle && s.time > s.autoAt) {
         s.target = Math.round(s.rot / step) * step - step;
         s.autoAt = s.time + 5;
@@ -735,7 +764,9 @@ export function World({ cases, navigate, host, onReady, setBusy }: Props) {
     const front = ((Math.round(-(s.rot + spin) / step) % n) + n) % n;
     if (front !== s.front && s.rise > 0.5) {
       s.front = front;
-      emit("ring-active", { index: built.panels[front].caseIndex });
+      // запоминаем и в общем состоянии: подпись на главной создаётся заново при каждом возвращении
+      sceneState.active = built.panels[front].caseIndex;
+      emit("ring-active", { index: sceneState.active });
     }
 
     // камера: от низкого взгляда над водой к виду на кольцо сверху
@@ -751,7 +782,17 @@ export function World({ cases, navigate, host, onReady, setBusy }: Props) {
 
     // раскрытие панели
     const ex = s.expand;
-    if (ex) {
+    const casePath = ex && `/cases/${ex.panel.slug}/`;
+    if (ex && !ex.navigated && location.pathname !== ex.from) {
+      // пока панель раскрывалась, человек сам ушёл по ссылке в шапке: не перебиваем его переход
+      finishExpand();
+    } else if (ex && ex.arrived && !ex.done && !location.pathname.endsWith(casePath!)) {
+      // страница кейса открылась, но человек сразу нажал «Назад»: убираем панель
+      ex.done = true;
+      host.dataset.mode = "fade";
+      window.setTimeout(finishExpand, 380);
+    } else if (ex) {
+      if (ex.navigated && location.pathname.endsWith(casePath!)) ex.arrived = true;
       ex.t += dt;
       const k = clamp(ex.t / 0.95);
       const eased = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
@@ -764,7 +805,7 @@ export function World({ cases, navigate, host, onReady, setBusy }: Props) {
       const mixed = !ex.needMix || ex.panel.u.uMix.value >= 1;
       if (!ex.navigated && ex.t > 0.35) {
         ex.navigated = true;
-        navigate(`/cases/${ex.panel.slug}/`);
+        navigate(casePath!);
       }
       if (k >= 1 && !ex.done) {
         ex.waited += dt;

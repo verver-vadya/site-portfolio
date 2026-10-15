@@ -3,7 +3,7 @@
   display: none;
   position: relative;
   height: 170svh;
-  touch-action: pan-y; /* по горизонтали палец крутит кольцо, по вертикали листает страницу */
+  touch-action: pan-y pinch-zoom; /* по горизонтали палец крутит кольцо, по вертикали листает страницу, двумя пальцами — увеличение */
 }
 :global(html.scene-on) .stage {
   display: block;

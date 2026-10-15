@@ -353,7 +353,8 @@ p {
 .btn:active {
   transform: scale(0.97);
 }
-.btn:disabled {
+.btn:disabled,
+.btn[aria-disabled="true"] {
   opacity: 0.5;
   cursor: progress;
 }
@@ -386,6 +387,14 @@ html.js:not(.reveal-all) [data-reveal]:not(.is-in) {
 [data-reveal] {
   transition: opacity 700ms var(--ease-soft), transform 900ms var(--ease-soft);
   transition-delay: calc(var(--reveal-i, 0) * 70ms);
+}
+/* при печати и сохранении в PDF видно всё, даже то, до чего не долистали */
+@media print {
+  html.js [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   html.js:not(.reveal-all) [data-reveal]:not(.is-in) {

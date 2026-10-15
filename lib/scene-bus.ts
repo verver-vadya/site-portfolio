@@ -23,5 +23,6 @@ export type SceneShot = { src: string; large: string; width: number; height: num
 // shots — экраны с компьютера, phone — с телефона (на вертикальном экране кольцо из них)
 export type SceneCase = { slug: string; title: string; shots: SceneShot[]; phone: SceneShot[] };
 
-// Сцена жива и сама обрабатывает «Открыть» (иначе ссылка работает как обычно)
-export const sceneState = { live: false };
+// live: сцена жива и сама обрабатывает «Открыть» (иначе ссылка работает как обычно);
+// active: какая работа сейчас спереди (подпись берёт её, когда снова появляется на главной)
+export const sceneState = { live: false, active: 0 };

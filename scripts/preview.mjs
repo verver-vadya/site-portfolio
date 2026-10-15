@@ -28,11 +28,18 @@ async function file(p) {
 
 http
   .createServer(async (req, res) => {
-    const url = decodeURIComponent(new URL(req.url, "http://x").pathname);
-    const target = path.join(ROOT, url);
-    const found = target.startsWith(ROOT) ? await file(target) : null;
-    const send = found ?? path.join(ROOT, "404.html");
-    res.writeHead(found ? 200 : 404, { "content-type": TYPES[path.extname(send)] ?? "application/octet-stream" });
-    res.end(await fs.readFile(send));
+    try {
+      const url = decodeURIComponent(new URL(req.url, "http://x").pathname);
+      const target = path.join(ROOT, url);
+      const rel = path.relative(ROOT, target);
+      const inside = !rel.startsWith("..") && !path.isAbsolute(rel);
+      const found = inside ? await file(target) : null;
+      const send = found ?? (await file(path.join(ROOT, "404.html")));
+      res.writeHead(found ? 200 : 404, { "content-type": send ? (TYPES[path.extname(send)] ?? "application/octet-stream") : TYPES[".txt"] });
+      res.end(send ? await fs.readFile(send) : "404: страницы нет (сайт собран?)");
+    } catch (e) {
+      res.writeHead(e instanceof URIError ? 400 : 500, { "content-type": TYPES[".txt"] });
+      res.end(String(e.message));
+    }
   })
-  .listen(PORT, () => console.log(`сайт из ${path.relative(process.cwd(), ROOT)}: http://localhost:${PORT}/`));
+  .listen(PORT, "127.0.0.1", () => console.log(`сайт из ${path.relative(process.cwd(), ROOT)}: http://localhost:${PORT}/`));

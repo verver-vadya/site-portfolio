@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props) {
     title: `${c.title} — ${c.niche.toLowerCase()} · verver`,
     description: c.summary,
     path: `/cases/${c.slug}/`,
-    image: `img/cases/${c.slug}/desktop-1-1440.webp`,
+    image: `img/cases/${c.slug}/og.jpg`, // делает scripts/images.mjs: JPEG 1200×630, его понимают все мессенджеры
   });
 }
 

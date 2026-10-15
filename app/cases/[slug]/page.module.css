@@ -44,6 +44,7 @@
   inset: auto 0 0 0;
   padding-block: var(--s-16) var(--s-12);
   color: #f2f2f2;
+  --c-focus: #f2f2f2; /* рамка фокуса тоже светлая, иначе в светлой теме её не видно на тёмном */
 }
 .heroIn {
   display: grid;

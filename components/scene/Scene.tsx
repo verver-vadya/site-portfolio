@@ -57,7 +57,13 @@ export default function Scene({ cases, home, navigate, host, onReady }: ScenePro
 
   // Покадровая запись видео (?scene=record): сцена сама не рисует, кадр делает скрипт записи
   // через window.__sceneAdvance(секунды) и сразу снимает экран. Так видео ровное даже без видеокарты.
-  const [record] = useState(() => sessionStorage.getItem("scene") === "record");
+  const [record] = useState(() => {
+    try {
+      return sessionStorage.getItem("scene") === "record";
+    } catch {
+      return false;
+    }
+  });
   useEffect(() => {
     if (!record) return;
     const w = window as Window & { __sceneAdvance?: (t: number) => void };
@@ -80,6 +86,7 @@ export default function Scene({ cases, home, navigate, host, onReady }: ScenePro
       <World
         key={portrait ? "portrait" : "landscape"}
         cases={ringCases}
+        home={home}
         navigate={navigate}
         host={host}
         onReady={onReady}

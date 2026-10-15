@@ -10,8 +10,14 @@ import s from "./Stage.module.css";
 export type StageCase = { slug: string; title: string; meta: string; tagline?: string };
 
 export function Stage({ cases }: { cases: StageCase[] }) {
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState(() => sceneState.active);
   const [shown, setShown] = useState(false);
+  // подпись зачитывается вслух только после нажатия ← →, а не при каждом шаге кольца само по себе
+  const [announce, setAnnounce] = useState(false);
+  const step = (dir: 1 | -1) => {
+    setAnnounce(true);
+    emit("ring-step", { dir });
+  };
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => on("ring-active", ({ index }) => setActive(index)), []);
@@ -57,7 +63,7 @@ export function Stage({ cases }: { cases: StageCase[] }) {
           <span className={s.touch}>Листайте кольцо пальцем, нажмите на&nbsp;экран, чтобы открыть</span>
         </p>
         <div className={`wrap ${s.caption}`}>
-          <div className={s.info} aria-live="polite">
+          <div className={s.info} aria-live={announce ? "polite" : "off"}>
             <p className="caps muted">
               Работа {pad(active + 1)} из&nbsp;{pad(cases.length)}
             </p>
@@ -67,12 +73,12 @@ export function Stage({ cases }: { cases: StageCase[] }) {
             <p className={`${s.meta} muted`}>{c.meta}</p>
           </div>
           <div className={s.actions}>
-            <button className="round" type="button" aria-label="Предыдущая работа" onClick={() => emit("ring-step", { dir: -1 })}>
+            <button className="round" type="button" aria-label="Предыдущая работа" onClick={() => step(-1)}>
               <svg viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
               </svg>
             </button>
-            <button className="round" type="button" aria-label="Следующая работа" onClick={() => emit("ring-step", { dir: 1 })}>
+            <button className="round" type="button" aria-label="Следующая работа" onClick={() => step(1)}>
               <svg viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M7.5 4.5 13 10l-5.5 5.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
               </svg>

@@ -51,7 +51,8 @@ export function Motion() {
   // ---------- плавная прокрутка ----------
   useEffect(() => {
     if (!matchMedia("(pointer: fine) and (hover: hover)").matches || reduced()) return;
-    const l = new Lenis({ autoRaf: true, lerp: 0.1, stopInertiaOnNavigate: true });
+    // allowNestedScroll: колесо над полем «Что ещё важно» и другими прокручиваемыми блоками крутит их, а не страницу
+    const l = new Lenis({ autoRaf: true, lerp: 0.1, stopInertiaOnNavigate: true, allowNestedScroll: true });
     lenis.current = l;
     return () => {
       l.destroy();
@@ -73,7 +74,8 @@ export function Motion() {
       const url = new URL(a.href, location.href);
       if (url.origin !== location.origin) return;
       if (BASE_PATH && url.pathname !== BASE_PATH && !url.pathname.startsWith(`${BASE_PATH}/`)) return;
-      if (trim(url.pathname) === trim(location.pathname) && url.search === location.search) return;
+      // та же страница (в том числе с другим ?параметром или #якорем): переход без шторки, как обычно
+      if (trim(url.pathname) === trim(location.pathname)) return;
       if (!("startViewTransition" in document) || reduced()) return;
 
       e.preventDefault();
@@ -155,7 +157,8 @@ export function Motion() {
       if (!frame) frame = requestAnimationFrame(paint);
     };
     const onMove = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse") return;
+      // мышь и перо над планшетом рисуют ромб; у пальца курсора нет
+      if (e.pointerType === "touch") return;
       x = e.clientX;
       y = e.clientY;
       el.dataset.on = "";

@@ -292,7 +292,8 @@ export function RequestForm() {
         <button
           className="btn"
           type="submit"
-          disabled={busy}
+          // не disabled: иначе фокус с кнопки слетает в начало страницы; повторное нажатие ловит sending
+          aria-disabled={busy || undefined}
           aria-busy={busy}
           onPointerDown={() => {
             pressingSubmit.current = true;
@@ -304,9 +305,9 @@ export function RequestForm() {
         <div
           ref={statusRef}
           className={s.status}
+          // область всегда на месте (пустая без рамки): так экранный диктор зачитает ответ, когда он появится
           role="status"
           aria-live="polite"
-          hidden={!status.message}
           data-state={status.state || undefined}
         >
           {status.state === "success" && <SuccessMark key={successCount} />}

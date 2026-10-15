@@ -34,13 +34,15 @@ function paint(choice: Choice) {
 }
 
 export function ThemeSwitch() {
-  const [choice, setChoice] = useState<Choice>("dark");
+  // null до чтения выбора: иначе на миг красили бы тёмную тему поверх светлой, выставленной скриптом в <head>
+  const [choice, setChoice] = useState<Choice | null>(null);
 
   useEffect(() => {
     setChoice(read());
   }, []);
 
   useEffect(() => {
+    if (!choice) return;
     paint(choice);
     if (choice !== "system") return;
     const q = lightQuery();

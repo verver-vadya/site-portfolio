@@ -5,7 +5,7 @@
 // на главной. Без WebGL, на слабой видеокарте и при выключенных в системе анимациях сцены нет:
 // остаются надпись с отражением на CSS и обычный список работ.
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
+import { Component, useCallback, useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 import type { SceneCase } from "@/lib/scene-bus";
 import { emit } from "@/lib/scene-bus";
 import type { SceneProps } from "./Scene";
@@ -17,8 +17,12 @@ function capable() {
     // ?scene=force — для проверки в браузере без видеокарты;
     // ?scene=record — то же и покадровая запись видео (см. Scene.tsx)
     const mode = location.search.match(/[?&]scene=(force|record)/)?.[1];
-    if (mode) sessionStorage.setItem("scene", mode);
-    const force = !!sessionStorage.getItem("scene");
+    // хранилище сайта может быть запрещено в браузере: тогда флаг просто не запоминается
+    let force = !!mode;
+    try {
+      if (mode) sessionStorage.setItem("scene", mode);
+      force = force || !!sessionStorage.getItem("scene");
+    } catch {}
     const canvas = document.createElement("canvas");
     const gl = canvas.getContext("webgl2", { failIfMajorPerformanceCaveat: !force });
     if (!gl) return false;
@@ -26,6 +30,23 @@ function capable() {
     return true;
   } catch {
     return false;
+  }
+}
+
+// Если сцена упала (не создался контекст WebGL, ошибка шейдера на редкой видеокарте),
+// сайт остаётся рабочим: убираем сцену и показываем запасной вариант без 3D
+class Fallback extends Component<{ onFail: () => void; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    document.documentElement.classList.remove("scene-on", "scene-ready");
+    emit("scene-ready", { ready: false });
+    this.props.onFail();
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
   }
 }
 
@@ -64,6 +85,11 @@ export function SceneRoot({ cases }: { cases: SceneCase[] }) {
   }, [ok, home, Scene]);
 
   const navigate = useCallback((href: string) => router.push(href), [router]);
+  const onFail = useCallback(() => {
+    if (host.current) host.current.dataset.mode = "";
+    setOk(false);
+    setScene(null);
+  }, []);
   const onReady = useCallback(() => {
     document.documentElement.classList.add("scene-ready");
     emit("scene-ready", { ready: true });
@@ -71,7 +97,11 @@ export function SceneRoot({ cases }: { cases: SceneCase[] }) {
 
   return (
     <div ref={host} className={s.root} data-home={home ? "" : undefined} data-overlap-ok aria-hidden="true">
-      {Scene && host.current && <Scene cases={cases} home={home} navigate={navigate} host={host.current} onReady={onReady} />}
+      {Scene && host.current && (
+        <Fallback onFail={onFail}>
+          <Scene cases={cases} home={home} navigate={navigate} host={host.current} onReady={onReady} />
+        </Fallback>
+      )}
     </div>
   );
 }

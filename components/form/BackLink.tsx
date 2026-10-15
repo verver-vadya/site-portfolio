@@ -46,6 +46,8 @@ export function BackLink({ className }: { className?: string }) {
 
   return (
     <a
+      // без ромб-шторки: ссылка идёт назад по истории, и страница открывается там, где её оставили
+      data-no-curtain
       className={`${className ?? ""} caps link`}
       href={back?.href ?? withBase("")}
       hidden={!back}

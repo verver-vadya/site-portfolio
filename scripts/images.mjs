@@ -1,6 +1,8 @@
 // Картинки кейсов для сайта: из content/cases/<папка>/*.jpg делает WebP нужных ширин
-// в public/img/cases/<папка>/ и список размеров public/img/manifest.json.
-// Запускается сам перед `npm run dev` и `npm run build`; готовые файлы не пересобирает.
+// в public/img/cases/<папка>/, превью для мессенджеров og.jpg (1200×630, из первого экрана)
+// и список размеров public/img/manifest.json.
+// Запускается сам перед `npm run dev` и `npm run build`. Готовый файл пересобирается, только если
+// исходник поменялся: у результата то же время изменения, что у исходника, и сравнивается оно.
 import sharp from "sharp";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -25,11 +27,20 @@ for (const slug of slugs) {
     const kind = name.startsWith("phone") ? "phone" : "desktop";
     const meta = await sharp(src).metadata();
     const widths = [...new Set(WIDTHS[kind].map((w) => Math.min(w, meta.width)))];
-    const srcTime = (await fs.stat(src)).mtimeMs;
+    const srcStat = await fs.stat(src);
+    const build = async (out, make) => {
+      const done = await fs.stat(out).then((s) => Math.abs(s.mtimeMs - srcStat.mtimeMs) < 1, () => false);
+      if (done) return;
+      await make(sharp(src)).toFile(out);
+      await fs.utimes(out, new Date(), srcStat.mtime);
+    };
     for (const w of widths) {
-      const out = path.join(OUT, slug, `${name}-${w}.webp`);
-      const done = await fs.stat(out).then((s) => s.mtimeMs >= srcTime, () => false);
-      if (!done) await sharp(src).resize({ width: w }).webp({ quality: QUALITY }).toFile(out);
+      await build(path.join(OUT, slug, `${name}-${w}.webp`), (img) => img.resize({ width: w }).webp({ quality: QUALITY }));
+    }
+    if (name === "desktop-1") {
+      await build(path.join(OUT, slug, "og.jpg"), (img) =>
+        img.resize({ width: 1200, height: 630, fit: "cover", position: "top" }).jpeg({ quality: 82, mozjpeg: true })
+      );
     }
     manifest[`${slug}/${name}`] = { width: meta.width, height: meta.height, widths };
   }
