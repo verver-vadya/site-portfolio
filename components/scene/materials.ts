@@ -107,6 +107,7 @@ export type PanelUniforms = {
   uBend: { value: number };
   uSqueeze: { value: number };
   uWiden: { value: number };
+  uEnterLin: { value: number }; // время появления 0..1 без сглаживания: по нему раскручивается свиток
 };
 
 // Появление кольца, как в DialKit: лента лежит плашмя на воде широким кругом, съезжает к центру
@@ -142,7 +143,7 @@ export function panelMaterial(shared: Shared, u: PanelUniforms) {
     vertexShader: /* glsl */ `
       #include <clipping_planes_pars_vertex>
       uniform float uTheta, uWidth, uRadius, uHeight, uLift, uHover, uExpand, uDepth;
-      uniform float uEnter, uEnterT, uStretch, uBend, uSqueeze, uWiden;
+      uniform float uEnter, uEnterT, uStretch, uBend, uSqueeze, uWiden, uEnterLin;
       uniform vec4 uRect;
       varying vec2 vUv;
       varying vec3 vWorld;
@@ -154,9 +155,39 @@ export function panelMaterial(shared: Shared, u: PanelUniforms) {
         return c * (log(ch + sqrt(max(0.0, ch * ch - 1.0))) - sqrt(max(0.0, 1.0 - inv * inv)));
       }
 
-      // точка ленты: угол на кольце и высота от середины панели (в половинах высоты)
-      vec3 band(float th, float yRel, float r) {
+      // точка ленты: место на панели поперёк (u от -0,5 до 0,5) и по высоте (yRel от -1 до 1)
+      vec3 band(float u, float yRel, float r) {
         float h = uHeight * 0.5;
+        // Пока кольцо появляется, каждый экран свёрнут, как бумажный свиток, и раскручивается.
+        // Передние экраны раскручиваются раньше задних. В конце всё ровно, как без этого.
+        float lin = clamp((uEnterLin - 0.14 * (1.0 - cos(uTheta)) * 0.5) / 0.86, 0.0, 1.0);
+        float roll = 0.62 * (1.0 - smoothstep(0.04, 0.8, lin));
+        float W = r * uWidth;
+        float sx = (u + 0.5) * W; // от левого края экрана
+        float p0 = W * (1.0 - roll); // отсюда бумага уходит в свиток
+        float rc = W * 0.1;
+        float dTan = 0.0;
+        float dIn = 0.0;
+        if (sx > p0) {
+          float a = (sx - p0) / rc;
+          float rr = rc / (1.0 + 0.12 * a); // виток к центру свитка всё уже
+          dTan = p0 + rr * sin(a) - sx;
+          dIn = rr * (1.0 - cos(a));
+        }
+        // верх экрана подвёрнут, как край листа, и расправляется вместе со свитком
+        float topCurl = 0.55 * (1.0 - smoothstep(0.0, 0.75, lin));
+        float q = h * (1.0 - topCurl * 1.4);
+        float yy = yRel * h;
+        float dY = 0.0;
+        if (yy > q && topCurl > 0.0) {
+          float a = (yy - q) / (h * 0.35);
+          dY = q + h * 0.35 * sin(a) - yy;
+          dIn += h * 0.35 * (1.0 - cos(a));
+        }
+        // лёгкая волна по ткани, затихает к концу появления
+        float flutter = (1.0 - smoothstep(0.1, 0.95, lin)) * 0.16 * h * sin(yRel * 2.4 + u * 5.0 + uEnterLin * 16.0 + uTheta * 3.0);
+        float th = uTheta + u * uWidth + dTan / r;
+        yRel = (yy + dY) / h;
         float c = ${ENTER.curve.toFixed(3)} * h;
         float e = clamp(uEnter, 0.0, 1.0);
         float s = yRel * h + mix(-h - ${ENTER.approach.toFixed(3)} * h, uEnterT, e);
@@ -174,19 +205,19 @@ export function panelMaterial(shared: Shared, u: PanelUniforms) {
         y = mix(y, uLift + h + yRel * h * uSqueeze, settle);
         // верх и низ ленты стянуты к центру, середина выгнута: экран как ткань на обруче
         float edge = 1.0 - sqrt(max(0.0, 1.0 - yRel * yRel));
-        r += off - uBend * h * edge;
+        r += off - uBend * h * edge - dIn + flutter;
         return vec3(r * sin(th) * uWiden, y, r * cos(th));
       }
 
       void main() {
         vUv = uv;
-        float th = uTheta + (uv.x - 0.5) * uWidth;
+        float u = uv.x - 0.5;
         float r = uRadius + uHover;
         float yRel = uv.y * 2.0 - 1.0;
-        vec3 p = band(th, yRel, r);
-        // нормаль по наклону ленты: пока лента лежит, она смотрит вверх
-        vec3 up = band(th, yRel + 0.02, r) - band(th, yRel - 0.02, r);
-        vec3 side = vec3(cos(th), 0.0, -sin(th));
+        vec3 p = band(u, yRel, r);
+        // нормаль по наклону ленты: пока лента лежит, она смотрит вверх; в свитке — по витку
+        vec3 up = band(u, yRel + 0.02, r) - band(u, yRel - 0.02, r);
+        vec3 side = band(u + 0.005, yRel, r) - band(u - 0.005, yRel, r);
         vec3 n = normalize(cross(side, up));
         vec4 world = modelMatrix * vec4(p, 1.0);
         vWorld = world.xyz;

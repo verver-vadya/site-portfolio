@@ -120,14 +120,16 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       uEnter: { value: 0 },
       uEnterT: { value: lo },
       uStretch: { value: ENTER.stretch * clamp(radius / (4.6 * (HP / 2)), 0.45, 1) },
-      uBend: { value: 0.3 },
+      uBend: { value: 0.08 },
       uSqueeze: { value: 1 },
       uWiden: { value: 1 },
+      uEnterLin: { value: 0 },
     };
 
     const ring = new THREE.Group();
     world.add(ring);
-    const grid = new THREE.PlaneGeometry(1, 1, 48, 1);
+    // сетка частая и по высоте: лента гнётся при появлении и изгибается, как ткань
+    const grid = new THREE.PlaneGeometry(1, 1, 64, 28);
     grid.translate(0.5, 0.5, 0); // uv совпадает с позицией 0..1
     const panels: Panel[] = order.map(({ caseIndex, shotIndex }, i) => {
       const c = cases[caseIndex];
@@ -806,6 +808,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     s.prevRise = s.rise;
     s.rise = 1 - Math.pow(1 - s.enterT, 5.65);
     built.enterU.uEnter.value = s.rise;
+    built.enterU.uEnterLin.value = s.enterT;
     built.ring.position.set(0, 0, -built.ringInfo.radius);
     built.ring.visible = s.rise > 0.001;
     // круги на воде там, где лента сходит с воды на подъём
@@ -866,7 +869,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       const kk = k * k * (3 - 2 * k);
       const settle = smooth(clamp((s.rise - 0.86) / 0.14));
       // в покое лента тоже выгнута (край экрана сбоку идёт дугой), при вращении и появлении сильнее
-      const bend = 0.3 + 0.3 * kk * kk + 0.2 * (1 - settle) * Math.min(1, s.rise * 4);
+      const bend = 0.08 + 0.32 * kk * kk + 0.12 * (1 - settle) * Math.min(1, s.rise * 4);
       const u = built.enterU;
       const attack = 1 - Math.exp(-dt * (bend > u.uBend.value ? 4 : 2.5));
       u.uBend.value += (bend - u.uBend.value) * attack;
