@@ -11,10 +11,12 @@ import * as THREE from "three";
 import { emit, on, sceneState, type SceneCase } from "@/lib/scene-bus";
 import {
   createShared,
+  ENTER,
   fadeMaterial,
   panelMaterial,
   skyMaterial,
   waterMaterial,
+  tractrixHeight,
   wordMaterial,
   type PanelUniforms,
   type WaterUniforms,
@@ -31,7 +33,6 @@ const WORD_ASC = 588;
 
 const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const smooth = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
-const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 
 type Panel = {
@@ -98,9 +99,26 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     while (order.length < 8) order.push(...order.slice(0, Math.min(order.length, 8 - order.length)));
     const n = order.length;
     const step = (Math.PI * 2) / n;
-    const width = step * 0.86;
+    // экраны почти вплотную, как в DialKit: одна сплошная лента с тонкими швами
+    const width = step * 0.985;
     const aspect = cases[0]?.shots[0] ? cases[0].shots[0].width / cases[0].shots[0].height : 1.6;
     const radius = (aspect * HP) / width;
+
+    // появление (см. ENTER в materials.ts): длина пути, на которой середина панели встаёт на свою высоту
+    const curve = ENTER.curve * (HP / 2);
+    let lo = 0;
+    let hi = 40;
+    for (let i = 0; i < 40; i++) {
+      const mid = (lo + hi) / 2;
+      if (ENTER.floor + tractrixHeight(mid, curve) < LIFT + HP / 2) lo = mid;
+      else hi = mid;
+    }
+    // узкое кольцо из экранов телефона: лента ложится не так далеко
+    const enterU = {
+      uEnter: { value: 0 },
+      uEnterT: { value: lo },
+      uStretch: { value: ENTER.stretch * clamp(radius / (4.6 * (HP / 2)), 0.45, 1) },
+    };
 
     const ring = new THREE.Group();
     world.add(ring);
@@ -126,6 +144,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
         uRect: { value: new THREE.Vector4() },
         uDepth: { value: 1 },
         uCover: { value: new THREE.Vector4(1, 1, 0, 0) },
+        ...enterU,
       };
       const mesh = new THREE.Mesh(grid, panelMaterial(shared, u));
       mesh.frustumCulled = false;
@@ -176,6 +195,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       ring,
       panels,
       ringInfo: { n, step, width, radius, aspect },
+      enterU,
       water,
       waterU,
       fade,
@@ -209,8 +229,10 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     mode: "spring" as "spring" | "drag" | "inertia",
     lastInput: -10,
     autoAt: 6,
-    rise: 0,
+    rise: 0, // появление кольца 0..1 после сглаживания
     prevRise: 0,
+    enterT: 0, // время появления 0..1, без сглаживания
+    enterWant: false,
     front: -1,
     hovered: -1,
     pointer: { x: 0, y: 0, inside: false, moved: 0, lastWater: null as THREE.Vector3 | null },
@@ -759,23 +781,35 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     });
     built.wordGroup.visible = p < 0.999;
 
-    // кольцо поднимается из воды
+    // Кольцо появляется, когда буквы почти ушли под воду: лента всплывает, лежит на воде широким
+    // кругом и встаёт стеной (как в DialKit, шейдер в materials.ts). Идёт по времени, а не за
+    // прокруткой: 2,9 секунды, быстро в начале и долго, мягко в конце. Назад к надписи — ложится
+    // обратно быстрее.
+    if (p > 0.55) s.enterWant = true;
+    else if (p < 0.35) s.enterWant = false;
+    s.enterT = clamp(s.enterT + (s.enterWant ? dt / 2.9 : -dt / 1.1));
     s.prevRise = s.rise;
-    s.rise = easeOut(clamp((p - 0.3) / 0.62));
-    const under = -(HP + LIFT + 0.8);
-    built.ring.position.set(0, under * (1 - s.rise), -built.ringInfo.radius);
+    s.rise = 1 - Math.pow(1 - s.enterT, 5.65);
+    built.enterU.uEnter.value = s.rise;
+    built.ring.position.set(0, 0, -built.ringInfo.radius);
     built.ring.visible = s.rise > 0.001;
+    // круги на воде там, где лента сходит с воды на подъём
     const riseSpeed = Math.abs(s.rise - s.prevRise) / dt;
-    if (riseSpeed > 0.01 && s.rise < 0.99 && s.sim) {
+    if (riseSpeed > 0.01 && s.rise < 0.95 && s.sim) {
       const { radius, width } = built.ringInfo;
-      for (let k = 0; k < 2; k++) {
+      const h = HP / 2;
+      const travel = -h - ENTER.approach * h + (built.enterU.uEnterT.value + h + ENTER.approach * h) * s.rise;
+      const foot = travel - h <= 0 ? ENTER.curve * h * built.enterU.uStretch.value : 0;
+      const settle = smooth(clamp((s.rise - 0.86) / 0.14));
+      const rr = radius + foot * (1 - settle);
+      for (let k = 0; k < 3; k++) {
         const pnl = built.panels[Math.floor(Math.random() * n)];
         const a = pnl.theta + s.rot + (Math.random() - 0.5) * width;
         if (Math.cos(a) < -0.3) continue;
-        const x = radius * Math.sin(a);
-        const z = radius * Math.cos(a) + built.ring.position.z;
+        const x = rr * Math.sin(a);
+        const z = rr * Math.cos(a) + built.ring.position.z;
         const r = s.simRect;
-        s.sim.drop((x - r.x) / r.z, (z - r.y) / r.w, 0.2 / r.z, Math.min(riseSpeed * 0.012, 0.014));
+        s.sim.drop((x - r.x) / r.z, (z - r.y) / r.w, 0.2 / r.z, Math.min(riseSpeed * 0.01, 0.014));
       }
     }
 
@@ -804,7 +838,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       s.vel = s.drag.v;
     }
     // пока поднимается, кольцо доворачивается: подъём по спирали
-    const spin = (1 - s.rise) * 0.7;
+    const spin = 0.5 * (1 - s.enterT) * (1 - s.enterT);
     const blur = Math.min(Math.abs(s.vel) * 0.0016, 0.011);
 
     built.panels.forEach((pnl, i) => {
