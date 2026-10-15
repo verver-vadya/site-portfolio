@@ -873,7 +873,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       const u = built.enterU;
       const attack = 1 - Math.exp(-dt * (bend > u.uBend.value ? 4 : 2.5));
       u.uBend.value += (bend - u.uBend.value) * attack;
-      u.uSqueeze.value += (1 - 0.15 * kk - u.uSqueeze.value) * attack;
+      u.uSqueeze.value += (1 - 0.06 * kk - u.uSqueeze.value) * attack;
       u.uWiden.value += (1 + 0.12 * kk - u.uWiden.value) * attack;
     }
 
