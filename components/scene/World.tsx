@@ -243,7 +243,8 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     prevRise: 0,
     passKey: "", // отражение и подводный проход с прошлого кадра (см. «три прохода»)
     spin: 0.9, // доворот кольца при подъёме, сглаженный
-    leave: null as null | { from: number; t: number }, // кольцо ложится обратно на воду
+    sink: 0, // 0..1: кольцо уходит под воду, когда листают назад к надписи
+    wordP: 0, // как глубоко ушла надпись, сглаженно
     enterT: 0, // время появления 0..1, без сглаживания
     enterWant: false,
     front: -1,
@@ -782,10 +783,39 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     }
     const p = s.progress;
 
-    // буквы: покачиваются на воде и по очереди тонут
+    // Кольцо появляется, когда буквы почти ушли под воду: лента всплывает, лежит на воде широким
+    // кругом и встаёт стеной (как в DialKit, шейдер в materials.ts). Идёт по времени, а не за
+    // прокруткой: 2,9 секунды, быстро в начале и долго, мягко в конце. Назад к надписи кольцо
+    // целиком уходит под воду за 0,7 секунды, и только потом всплывает надпись.
+    if (p > 0.55) s.enterWant = true;
+    else if (p < 0.48) s.enterWant = false;
+    s.prevRise = s.rise;
+    if (s.enterWant) {
+      if (s.sink >= 1) {
+        // ушло под воду целиком: следующий подъём снова с самого начала
+        s.sink = 0;
+        s.enterT = 0;
+      }
+      s.sink = Math.max(0, s.sink - dt / 0.7);
+      s.enterT = clamp(s.enterT + dt / 2.9);
+    } else if (s.enterT > 0) {
+      s.sink = Math.min(1, s.sink + dt / 0.7);
+      if (s.sink >= 1) s.enterT = 0;
+    }
+    s.rise = 1 - Math.pow(1 - s.enterT, 5.65);
+    built.enterU.uEnter.value = s.rise;
+    built.enterU.uEnterLin.value = s.enterT;
+    const sk = s.sink * s.sink * (3 - 2 * s.sink);
+    built.ring.position.set(0, -sk * (LIFT + HP + 0.3), -built.ringInfo.radius);
+    built.ring.visible = s.rise > 0.001 && s.sink < 1;
+
+    // буквы: покачиваются на воде и по очереди тонут. Пока кольцо над водой, надпись ждёт под водой
     const wordH = WORD_H * L.scale;
+    const wordTo = built.ring.visible && !s.enterWant ? 1 : p;
+    s.wordP += (wordTo - s.wordP) * (1 - Math.exp(-dt * 6));
+    const wp = s.wordP;
     built.letters.forEach((l, i) => {
-      const t = clamp((p - 0.035 * i) / 0.4);
+      const t = clamp((wp - 0.035 * i) / 0.4);
       const sink = smooth(t) * s.sinkDepth;
       const bob = Math.sin(s.time * 0.9 + i * 1.3) * wordH * 0.012 * (1 - t);
       l.prevY = l.y;
@@ -801,38 +831,8 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
         s.sim.drop((x - r.x) / r.z, (0 - r.y) / r.w, 0.14 / r.z, Math.min(speed * 0.008, 0.012));
       }
     });
-    built.wordGroup.visible = p < 0.999;
+    built.wordGroup.visible = wp < 0.999;
 
-    // Кольцо появляется, когда буквы почти ушли под воду: лента всплывает, лежит на воде широким
-    // кругом и встаёт стеной (как в DialKit, шейдер в materials.ts). Идёт по времени, а не за
-    // прокруткой: 2,9 секунды, быстро в начале и долго, мягко в конце. Назад к надписи — ложится
-    // обратно быстрее.
-    if (p > 0.55) s.enterWant = true;
-    else if (p < 0.48) s.enterWant = false;
-    s.prevRise = s.rise;
-    if (s.enterWant) {
-      // снова листают вниз, пока кольцо ложилось: продолжаем подъём с той же высоты
-      if (s.leave) s.enterT = 1 - Math.pow(1 - s.rise, 1 / 5.65);
-      s.leave = null;
-      s.enterT = clamp(s.enterT + dt / 2.9);
-      s.rise = 1 - Math.pow(1 - s.enterT, 5.65);
-    } else if (s.rise > 0) {
-      // Назад к надписи кольцо ложится на воду за 1,2 секунды, плавно в начале и в конце.
-      // Обратный ход появления так не годится: он почти секунду стоит на месте, а потом резко падает
-      if (!s.leave) s.leave = { from: s.rise, t: 0 };
-      s.leave.t = clamp(s.leave.t + dt / (0.5 + 0.7 * s.leave.from));
-      const k = s.leave.t;
-      s.rise = s.leave.from * (1 - (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2));
-      if (s.rise <= 0.001) {
-        s.rise = 0;
-        s.enterT = 0;
-      }
-    }
-    built.enterU.uEnter.value = s.rise;
-    // свиток сворачивается обратно вместе с тем, как кольцо ложится
-    built.enterU.uEnterLin.value = s.leave ? s.rise : s.enterT;
-    built.ring.position.set(0, 0, -built.ringInfo.radius);
-    built.ring.visible = s.rise > 0.001;
     // вращение: перетаскивание, инерция, пружина к ближайшей панели, сам шагает раз в несколько секунд
     if (s.mode === "inertia") {
       s.vel *= Math.exp(-dt * 3.2);
@@ -858,7 +858,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       s.vel = s.drag.v;
     }
     // пока поднимается, кольцо доворачивается и замедляется: подъём по спирали
-    const spinTo = s.leave ? 0.9 * (1 - s.rise) * (1 - s.rise) : 0.9 * (1 - s.enterT) * (1 - s.enterT);
+    const spinTo = 0.9 * (1 - s.enterT) * (1 - s.enterT);
     s.spin += (spinTo - s.spin) * (1 - Math.exp(-dt * 10));
     const spin = s.spin;
     // при вращении экраны не размываются и не гнутся
