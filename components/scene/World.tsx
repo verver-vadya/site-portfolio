@@ -26,6 +26,8 @@ import { buildLetters } from "./word";
 
 const FOV = 30;
 const TAN = Math.tan(((FOV / 2) * Math.PI) / 180);
+const RING_FOV = 72; // объектив у кольца, как в DialKit
+const RING_TAN = Math.tan(((RING_FOV / 2) * Math.PI) / 180);
 const HP = 2; // высота панели кольца
 const LIFT = 0.28; // зазор между водой и низом панели
 const WORD_H = 604; // высота надписи в единицах шрифта (с выносом ниже строки)
@@ -92,11 +94,11 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       return { ...l, mesh, y: 0, prevY: 0 };
     });
 
-    // кольцо: по 3 экрана с каждой работы вперемешку, не меньше 8 панелей
+    // кольцо: по 3 экрана с каждой работы вперемешку, не меньше 18 панелей — широкая лента, как в DialKit
     const order: { caseIndex: number; shotIndex: number }[] = [];
     const perCase = Math.max(1, Math.min(3, ...cases.map((c) => c.shots.length)));
     for (let s = 0; s < perCase; s++) cases.forEach((_, ci) => order.push({ caseIndex: ci, shotIndex: s }));
-    while (order.length < 8) order.push(...order.slice(0, Math.min(order.length, 8 - order.length)));
+    while (order.length < 18) order.push(...order.slice(0, Math.min(order.length, 18 - order.length)));
     const n = order.length;
     const step = (Math.PI * 2) / n;
     // экраны почти вплотную, как в DialKit: одна сплошная лента с тонкими швами
@@ -118,6 +120,9 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       uEnter: { value: 0 },
       uEnterT: { value: lo },
       uStretch: { value: ENTER.stretch * clamp(radius / (4.6 * (HP / 2)), 0.45, 1) },
+      uBend: { value: 0 },
+      uSqueeze: { value: 1 },
+      uWiden: { value: 1 },
     };
 
     const ring = new THREE.Group();
@@ -216,6 +221,9 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       H: number;
       D: number;
       wpp: number;
+      ringDist: number; // от центра кольца до камеры
+      ringWpp: number; // сколько мира в пикселе у передней панели кольца
+      ringShift: number; // на телефоне камера ниже: лента выше подписи
       camY: number;
       scale: number;
       left: number;
@@ -231,6 +239,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     autoAt: 6,
     rise: 0, // появление кольца 0..1 после сглаживания
     prevRise: 0,
+    prevAng: NaN,
     enterT: 0, // время появления 0..1, без сглаживания
     enterWant: false,
     front: -1,
@@ -313,7 +322,13 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       scale = (rect.width * wpp) / 4097;
       left = (rect.left - W / 2) * wpp;
     }
-    st.current.layout = { W, H, D, wpp, camY, scale, left };
+    // камера у кольца: всё кольцо по ширине помещается в кадр (формула DialKit)
+    const R = built.ringInfo.radius;
+    const ringDist = R * Math.sqrt(1 + Math.pow(1 / RING_TAN / Math.max(aspect, 0.85) / 0.9, 2));
+    const ringWpp = (2 * (ringDist - R) * RING_TAN) / H;
+    // на вертикальном экране подпись закрывает низ: лента встаёт на 40 % высоты вместо середины
+    const ringShift = aspect < 1 ? 0.2 * (ringDist - R) * RING_TAN : 0;
+    st.current.layout = { W, H, D, wpp, camY, scale, left, ringDist, ringWpp, ringShift };
 
     built.shared.uReflH.value = Math.max(0.6, WORD_H * scale * 1.5);
     // буквы уходят на глубину, где их уже не видно (см. passChunk в materials.ts)
@@ -422,7 +437,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     probe.remove();
     const bottom = Math.max(header + 420, svh);
     const depth = 1;
-    const halfH = depth * TAN;
+    const halfH = depth * Math.tan((camera.fov * Math.PI) / 360);
     const halfW = halfH * (W / H);
     const toX = (px: number) => (px / W) * 2 * halfW - halfW;
     const toY = (py: number) => halfH - (py / H) * 2 * halfH;
@@ -565,7 +580,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
         const dx = e.clientX - s.drag.x;
         s.drag.x = e.clientX;
         s.drag.travel += Math.abs(dx);
-        const dTheta = (dx * L.wpp * 1.05) / built.ringInfo.radius;
+        const dTheta = (dx * L.ringWpp * 1.05) / built.ringInfo.radius;
         s.rot += dTheta;
         s.target = s.rot;
         const now = s.time * 1000; // время сцены, а не часов: так же работает и покадровая запись
@@ -837,9 +852,26 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     } else {
       s.vel = s.drag.v;
     }
-    // пока поднимается, кольцо доворачивается: подъём по спирали
-    const spin = 0.5 * (1 - s.enterT) * (1 - s.enterT);
-    const blur = Math.min(Math.abs(s.vel) * 0.0016, 0.011);
+    // пока поднимается, кольцо доворачивается и замедляется: подъём по спирали
+    const spin = 0.9 * (1 - s.enterT) * (1 - s.enterT);
+    // скорость вращения (рад/с) вместе с доворотом при появлении
+    const ang = s.rot + spin;
+    const w = Number.isNaN(s.prevAng) ? 0 : Math.abs(ang - s.prevAng) / dt;
+    s.prevAng = ang;
+    const blur = Math.min(w * 0.0016, 0.011);
+    // лента как ткань (как в DialKit): чем быстрее крутится, тем сильнее прогибается, сжимается
+    // по высоте и растягивается вширь; при появлении ещё и выгнута, пока не встанет
+    {
+      const k = clamp((w - 0.3) / 1.7);
+      const kk = k * k * (3 - 2 * k);
+      const settle = smooth(clamp((s.rise - 0.86) / 0.14));
+      const bend = 0.39 * kk * kk + 0.3 * (1 - settle) * Math.min(1, s.rise * 4);
+      const u = built.enterU;
+      const attack = 1 - Math.exp(-dt * (bend > u.uBend.value ? 4 : 2.5));
+      u.uBend.value += (bend - u.uBend.value) * attack;
+      u.uSqueeze.value += (1 - 0.15 * kk - u.uSqueeze.value) * attack;
+      u.uWiden.value += (1 + 0.12 * kk - u.uWiden.value) * attack;
+    }
 
     built.panels.forEach((pnl, i) => {
       pnl.u.uTheta.value = pnl.theta + s.rot + spin;
@@ -860,15 +892,23 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       emit("ring-active", { index: sceneState.active });
     }
 
-    // камера: от низкого взгляда над водой к виду на кольцо сверху
+    // камера: от низкого взгляда над водой с узким объективом к кольцу, как в DialKit: прямо на
+    // ленту на уровне её середины, широким объективом, чтобы экраны выглядели выгнутыми
     const e = smooth(clamp(p / 0.92));
-    const ringPos = tmp.pos.set(0, 2.9, L.D);
+    const R = built.ringInfo.radius;
+    const mid = LIFT + HP / 2;
+    const ringPos = tmp.pos.set(0, mid - L.ringShift, -R + L.ringDist);
     const heroPos = tmp.v.set(0, L.camY, L.D);
     camera.position.lerpVectors(heroPos, ringPos, e);
     const heroTarget = new THREE.Vector3(0, L.camY, 0);
-    const ringTarget = new THREE.Vector3(0, 0.75, -built.ringInfo.radius * 0.5);
+    const ringTarget = new THREE.Vector3(0, mid - L.ringShift, -R);
     tmp.target.lerpVectors(heroTarget, ringTarget, e);
     camera.lookAt(tmp.target);
+    const fov = FOV + (RING_FOV - FOV) * e;
+    if (Math.abs(camera.fov - fov) > 1e-4) {
+      camera.fov = fov;
+      camera.updateProjectionMatrix();
+    }
     camera.updateMatrixWorld();
 
     // раскрытие панели

@@ -102,6 +102,11 @@ export type PanelUniforms = {
   uEnter: { value: number };
   uEnterT: { value: number };
   uStretch: { value: number };
+  // лента как ткань: при быстром вращении края стягиваются к центру кольца (uBend),
+  // лента чуть сжимается по высоте (uSqueeze) и растягивается вширь (uWiden)
+  uBend: { value: number };
+  uSqueeze: { value: number };
+  uWiden: { value: number };
 };
 
 // Появление кольца, как в DialKit: лента лежит плашмя на воде широким кругом, съезжает к центру
@@ -137,7 +142,7 @@ export function panelMaterial(shared: Shared, u: PanelUniforms) {
     vertexShader: /* glsl */ `
       #include <clipping_planes_pars_vertex>
       uniform float uTheta, uWidth, uRadius, uHeight, uLift, uHover, uExpand, uDepth;
-      uniform float uEnter, uEnterT, uStretch;
+      uniform float uEnter, uEnterT, uStretch, uBend, uSqueeze, uWiden;
       uniform vec4 uRect;
       varying vec2 vUv;
       varying vec3 vWorld;
@@ -166,9 +171,11 @@ export function panelMaterial(shared: Shared, u: PanelUniforms) {
         float y = ${ENTER.floor.toFixed(3)} + tractrixHeight(s, c) - (1.0 - smoothstep(0.0, 0.12, e)) * 0.7 * h;
         float settle = smoothstep(0.86, 1.0, e);
         off *= 1.0 - settle;
-        y = mix(y, uLift + h + yRel * h, settle);
-        r += off;
-        return vec3(r * sin(th), y, r * cos(th));
+        y = mix(y, uLift + h + yRel * h * uSqueeze, settle);
+        // верх и низ ленты стянуты к центру, середина выгнута: экран как ткань на обруче
+        float edge = 1.0 - sqrt(max(0.0, 1.0 - yRel * yRel));
+        r += off - uBend * h * edge;
+        return vec3(r * sin(th) * uWiden, y, r * cos(th));
       }
 
       void main() {
