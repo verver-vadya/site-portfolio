@@ -237,6 +237,7 @@ export function panelMaterial(shared: Shared, u: PanelUniforms) {
 
       // при быстром вращении картинка размывается вдоль хода кольца
       vec3 blurred(sampler2D map, vec2 uv) {
+        if (uBlur <= 0.0) return texture2D(map, uv).rgb; // без размытия хватает одной выборки
         vec3 sum = vec3(0.0);
         float total = 0.0;
         for (int i = -3; i <= 3; i++) {

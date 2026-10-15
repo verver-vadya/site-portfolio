@@ -102,6 +102,37 @@
   opacity: 0.75;
 }
 
+/* Панель кольца раскрылась в этот экран (класс ставит 3D-сцена): затемнение и подпись внизу
+   не выскакивают разом, а проявляются по очереди, пока холст сцены растворяется */
+.scrim {
+  transition: opacity 700ms var(--ease-soft);
+}
+.heroIn > * {
+  transition:
+    opacity 600ms var(--ease-soft),
+    transform 700ms var(--ease-soft),
+    text-decoration-color var(--d-fast) var(--ease-out);
+}
+.heroIn > :nth-child(2) {
+  transition-delay: 80ms;
+}
+.heroIn > :nth-child(3) {
+  transition-delay: 160ms;
+}
+:global(html.case-handoff) .scrim,
+:global(html.case-handoff) .heroIn > * {
+  opacity: 0;
+  transition: none;
+}
+:global(html.case-handoff) .heroIn > * {
+  transform: translateY(16px);
+}
+@media (prefers-reduced-motion: reduce) {
+  :global(html.case-handoff) .heroIn > * {
+    transform: none;
+  }
+}
+
 /* Всё, что ниже первого экрана */
 .content {
   position: relative;

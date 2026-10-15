@@ -89,6 +89,8 @@ export class Ripples {
   }
 
   // u, v в долях сетки; radius в долях ширины; strength — глубина ямки
+  private idle = 0; // шагов подряд без капель
+
   drop(u: number, v: number, radius: number, strength: number) {
     if (u < 0 || u > 1 || v < 0 || v > 1 || strength <= 0) return;
     if (this.drops.length >= MAX_DROPS) this.drops.shift();
@@ -96,6 +98,9 @@ export class Ripples {
   }
 
   step(gl: THREE.WebGLRenderer, steps: number) {
+    // давно не было капель: вода уже гладкая, считать нечего
+    this.idle = this.drops.length ? 0 : this.idle + steps;
+    if (this.idle > 900) return;
     const prev = gl.getRenderTarget();
     const uniforms = this.material.uniforms;
     for (let s = 0; s < steps; s++) {
