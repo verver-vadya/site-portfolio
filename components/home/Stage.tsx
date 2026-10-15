@@ -4,6 +4,8 @@
 // обычный список работ.
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { Stepper } from "pasito";
+import "pasito/styles.css";
 import { emit, on, sceneState } from "@/lib/scene-bus";
 import s from "./Stage.module.css";
 
@@ -21,6 +23,18 @@ export function Stage({ cases }: { cases: StageCase[] }) {
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => on("ring-active", ({ index }) => setActive(index)), []);
+
+  // точки работ (Pasito): активная заполняется до следующего шага, пока кольцо крутится само
+  const [auto, setAuto] = useState<{ wait: number; n: number } | null>(null);
+  useEffect(() => on("ring-auto", ({ wait }) => setAuto((a) => (wait === null ? null : { wait, n: (a?.n ?? 0) + 1 }))), []);
+  const dots = useRef<HTMLDivElement>(null);
+  // у Pasito подписи точек по-английски («Step 1»): ставим свои
+  useEffect(() => {
+    dots.current?.querySelector("[aria-label]")?.setAttribute("aria-label", "Работы на кольце");
+    dots.current?.querySelectorAll<HTMLElement>(".pasito-step").forEach((el, i) => {
+      if (cases[i]) el.setAttribute("aria-label", `Работа ${i + 1}: ${cases[i].title}`);
+    });
+  });
 
   // подпись видна, пока кольцо стоит на экране
   useEffect(() => {
@@ -64,8 +78,25 @@ export function Stage({ cases }: { cases: StageCase[] }) {
         </p>
         <div className={`wrap ${s.caption}`}>
           <div className={s.info} aria-live={announce ? "polite" : "off"}>
-            <p className="caps muted">
-              Работа {pad(active + 1)} из&nbsp;{pad(cases.length)}
+            <div className={s.dots} ref={dots}>
+              <Stepper
+                key={auto?.n ?? 0}
+                className={`${s.stepper}${auto ? ` ${s.filling}` : ""}`}
+                count={cases.length}
+                active={active}
+                filling={!!auto}
+                fillDuration={auto ? Math.round(auto.wait * 1000) : 0}
+                onStepClick={(i) => {
+                  setAnnounce(true);
+                  emit("ring-go", { index: i });
+                }}
+              />
+              <p className="caps muted" aria-hidden="true">
+                {pad(active + 1)} / {pad(cases.length)}
+              </p>
+            </div>
+            <p className="visually-hidden">
+              Работа {active + 1} из&nbsp;{cases.length}
             </p>
             <p className={s.title} key={c.slug}>
               {c.title}

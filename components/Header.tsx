@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { Logo } from "./Logo";
+import { MobileMenuLazy } from "./MobileMenuLazy";
 import s from "./Header.module.css";
 
 const items = [
@@ -62,7 +63,7 @@ export function Header() {
           <Logo className={s.full} />
           <Logo variant="mark" className={s.short} />
         </Link>
-        <nav aria-label="Разделы">
+        <nav className={s.nav} aria-label="Разделы">
           <ul className={`${s.list} caps`}>
             {items.map((it) => {
               const here = path === it.to;
@@ -81,6 +82,7 @@ export function Header() {
             })}
           </ul>
         </nav>
+        <MobileMenuLazy items={items.map((it) => ({ to: it.to, label: it.label, here: path === it.to }))} />
       </div>
     </header>
   );

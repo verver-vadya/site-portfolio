@@ -3,6 +3,8 @@
 export type SceneEvents = {
   "ring-active": { index: number }; // сцена → подпись: какая работа сейчас спереди
   "ring-step": { dir: 1 | -1 }; // кнопки ← → → сцена
+  "ring-go": { index: number }; // точки под кольцом → сцена: повернуть к этой работе
+  "ring-auto": { wait: number | null }; // сцена → точки: через сколько секунд сам шагнёт (null — не шагает)
   "ring-open": { slug: string }; // «Открыть» → сцена раскрывает панель в страницу кейса
   "scene-ready": { ready: boolean }; // сцена отрисовала первый кадр (или отключилась)
   cursor: { mode: "open" | null }; // сцена → курсор: над панелью кольца

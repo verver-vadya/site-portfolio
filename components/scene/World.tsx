@@ -22,6 +22,7 @@ import {
   type WaterUniforms,
 } from "./materials";
 import { Ripples } from "./ripples";
+import { tune } from "@/lib/tune";
 import { buildLetters } from "./word";
 
 const FOV = 30;
@@ -239,6 +240,8 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     mode: "spring" as "spring" | "drag" | "inertia",
     lastInput: -10,
     autoAt: 6,
+    autoIdle: false,
+    autoSent: -1, // какой автошаг уже передан точкам под кольцом
     rise: 0, // появление кольца 0..1 после сглаживания
     prevRise: 0,
     passKey: "", // отражение и подводный проход с прошлого кадра (см. «три прохода»)
@@ -588,7 +591,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
         const dx = e.clientX - s.drag.x;
         s.drag.x = e.clientX;
         s.drag.travel += Math.abs(dx);
-        const dTheta = (dx * L.ringWpp * 1.05) / built.ringInfo.radius;
+        const dTheta = (dx * L.ringWpp * tune.dragSpeed) / built.ringInfo.radius;
         s.rot += dTheta;
         s.target = s.rot;
         const now = s.time * 1000; // время сцены, а не часов: так же работает и покадровая запись
@@ -729,6 +732,19 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       s.lastInput = s.time;
     });
 
+    // точки работ под кольцом: доворачиваем к ближайшему экрану выбранной работы
+    const offGo = on("ring-go", ({ index }) => {
+      let best = Infinity;
+      for (const p of built.panels) {
+        const a = wrap(p.theta + s.rot);
+        if (p.caseIndex === index && Math.abs(a) < Math.abs(best)) best = a;
+      }
+      if (!Number.isFinite(best)) return;
+      s.mode = "spring";
+      s.target = s.rot - best;
+      s.lastInput = s.time;
+    });
+
     // «Открыть» в подписи: раскрываем ближайшую к зрителю панель этой работы
     const offOpen = on("ring-open", ({ slug }) => {
       let best: Panel | null = null;
@@ -758,6 +774,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       removeEventListener("touchmove", onTouchMove);
       document.documentElement.removeEventListener("pointerleave", onLeave);
       offStep();
+      offGo();
       offOpen();
       document.body.style.cursor = "";
     };
@@ -796,10 +813,10 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
         s.sink = 0;
         s.enterT = 0;
       }
-      s.sink = Math.max(0, s.sink - dt / 0.7);
-      s.enterT = clamp(s.enterT + dt / 2.9);
+      s.sink = Math.max(0, s.sink - dt / tune.leaveTime);
+      s.enterT = clamp(s.enterT + dt / tune.enterTime);
     } else if (s.enterT > 0) {
-      s.sink = Math.min(1, s.sink + dt / 0.7);
+      s.sink = Math.min(1, s.sink + dt / tune.leaveTime);
       if (s.sink >= 1) s.enterT = 0;
     }
     s.rise = 1 - Math.pow(1 - s.enterT, 5.65);
@@ -835,14 +852,14 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
 
     // вращение: перетаскивание, инерция, пружина к ближайшей панели, сам шагает раз в несколько секунд
     if (s.mode === "inertia") {
-      s.vel *= Math.exp(-dt * 3.2);
+      s.vel *= Math.exp(-dt * tune.inertia);
       s.rot += s.vel * dt;
       if (Math.abs(s.vel) < 0.5) {
         s.mode = "spring";
         s.target = Math.round(s.rot / step) * step;
       }
     } else if (s.mode === "spring") {
-      const k = 26;
+      const k = tune.spring;
       const acc = k * (s.target - s.rot) - 2 * Math.sqrt(k) * s.vel;
       s.vel += acc * dt;
       s.rot += s.vel * dt;
@@ -851,11 +868,19 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       const idle = s.time - s.lastInput > 7 && s.hovered < 0 && !focused && !s.expand && s.rise > 0.97;
       if (idle && s.time > s.autoAt) {
         s.target = Math.round(s.rot / step) * step - step;
-        s.autoAt = s.time + 5;
+        s.autoAt = s.time + tune.autoStep;
       }
       if (!idle) s.autoAt = Math.max(s.autoAt, s.time + 2);
+      s.autoIdle = idle;
     } else {
       s.vel = s.drag.v;
+      s.autoIdle = false;
+    }
+    // точки под кольцом: заполняются до следующего шага, пока кольцо крутится само
+    const autoKey = s.mode === "spring" && s.autoIdle ? s.autoAt : -1;
+    if (autoKey !== s.autoSent) {
+      s.autoSent = autoKey;
+      emit("ring-auto", { wait: autoKey < 0 ? null : Math.max(0, autoKey - s.time) });
     }
     // пока поднимается, кольцо доворачивается и замедляется: подъём по спирали
     const spinTo = 0.9 * (1 - s.enterT) * (1 - s.enterT);
@@ -869,7 +894,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       const want = i === s.hovered && !s.drag.active ? 1 : 0;
       pnl.hover += (want - pnl.hover) * (1 - Math.exp(-dt * 7));
       if (!s.expand || s.expand.panel !== pnl) {
-        pnl.u.uHover.value = pnl.hover * 0.12;
+        pnl.u.uHover.value = pnl.hover * tune.hover;
         pnl.u.uBlur.value = blur;
       }
     });
@@ -919,7 +944,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       const k = clamp(ex.t / 0.95);
       const eased = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
       ex.panel.u.uExpand.value = eased;
-      ex.panel.u.uHover.value = ex.panel.hover * 0.12 * (1 - eased);
+      ex.panel.u.uHover.value = ex.panel.hover * tune.hover * (1 - eased);
       ex.panel.u.uBlur.value = 0;
       (built.fade.material as THREE.ShaderMaterial).uniforms.uFade.value = smooth(clamp(ex.t / 0.6));
       // смена картинки: не раньше середины раскрытия, за 0,45 секунды

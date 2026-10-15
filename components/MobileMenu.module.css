@@ -1,0 +1,53 @@
+/* только на телефоне: на широком экране разделы стоят в шапке строкой */
+.menu {
+  display: none;
+}
+@media (max-width: 560px) {
+  .menu {
+    display: block;
+  }
+}
+/* сама кнопка и раскрытое меню — одна фигура в цветах темы */
+.box {
+  background: var(--c-paper);
+  color: var(--c-ink);
+  border: 1.5px solid var(--c-ink);
+}
+.trigger svg {
+  width: 20px;
+  height: 20px;
+}
+.list {
+  display: grid;
+  padding: var(--s-2);
+}
+.item {
+  border-radius: 12px;
+}
+.item[data-highlighted] {
+  background: color-mix(in srgb, var(--c-ink) 8%, transparent);
+}
+.link {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: var(--s-3);
+  color: inherit;
+  text-decoration: none;
+}
+.link[aria-current="page"] {
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+/* кружок на месте кнопки, пока меню не загрузилось */
+.stub {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+.stub svg {
+  width: 20px;
+  height: 20px;
+}

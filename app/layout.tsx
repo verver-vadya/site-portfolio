@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Intro, introScript } from "@/components/motion/Intro";
 import { Motion } from "@/components/motion/Motion";
+import { DialTune } from "@/components/DialTune";
 import { SceneRoot } from "@/components/scene/SceneRoot";
 import { getCases } from "@/lib/cases";
 import type { Img } from "@/lib/images";
@@ -66,6 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Footer />
         <Intro />
         <Motion />
+        <DialTune />
       </body>
     </html>
   );
