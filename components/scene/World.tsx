@@ -120,7 +120,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       uEnter: { value: 0 },
       uEnterT: { value: lo },
       uStretch: { value: ENTER.stretch * clamp(radius / (4.6 * (HP / 2)), 0.45, 1) },
-      uBend: { value: 0 },
+      uBend: { value: 0.3 },
       uSqueeze: { value: 1 },
       uWiden: { value: 1 },
     };
@@ -865,7 +865,8 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       const k = clamp((w - 0.3) / 1.7);
       const kk = k * k * (3 - 2 * k);
       const settle = smooth(clamp((s.rise - 0.86) / 0.14));
-      const bend = 0.39 * kk * kk + 0.3 * (1 - settle) * Math.min(1, s.rise * 4);
+      // в покое лента тоже выгнута (край экрана сбоку идёт дугой), при вращении и появлении сильнее
+      const bend = 0.3 + 0.3 * kk * kk + 0.2 * (1 - settle) * Math.min(1, s.rise * 4);
       const u = built.enterU;
       const attack = 1 - Math.exp(-dt * (bend > u.uBend.value ? 4 : 2.5));
       u.uBend.value += (bend - u.uBend.value) * attack;
