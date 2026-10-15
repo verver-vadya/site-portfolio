@@ -4,6 +4,10 @@
   position: relative;
   height: 170svh;
   touch-action: pan-y pinch-zoom; /* по горизонтали палец крутит кольцо, по вертикали листает страницу, двумя пальцами — увеличение */
+  /* кольцо тянут мышью и пальцем: подсказка и подпись при этом не выделяются */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 :global(html.scene-on) .stage {
   display: block;
@@ -44,12 +48,14 @@
   }
 }
 
-/* под подписью затемнение снизу, чтобы текст читался поверх отражений */
+/* под подписью затемнение снизу, чтобы текст читался поверх отражений. Холст сцены высотой
+   с самый высокий экран (100lvh), а этот блок — с самый низкий (100svh): когда на телефоне прячется
+   адресная строка, под кнопками открывается полоса холста. Затемнение уходит вниз и на неё. */
 .sticky::after {
   content: "";
   position: absolute;
-  inset: auto 0 0 0;
-  height: 42%;
+  inset: auto 0 calc(100svh - 100lvh) 0;
+  height: calc(42% + 100lvh - 100svh);
   z-index: -1;
   background: linear-gradient(to top, color-mix(in srgb, var(--c-paper) 88%, transparent), transparent);
   pointer-events: none;

@@ -214,7 +214,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     front: -1,
     hovered: -1,
     pointer: { x: 0, y: 0, inside: false, moved: 0, lastWater: null as THREE.Vector3 | null },
-    drag: { active: false, id: -1, x: 0, startX: 0, startY: 0, travel: 0, lastT: 0, v: 0 },
+    drag: { active: false, id: -1, x: 0, startX: 0, startY: 0, travel: 0, lastT: 0, v: 0, startRot: 0, lock: "" as "" | "x" | "y" },
     expand: null as null | {
       panel: Panel;
       from: string; // адрес, с которого раскрываем: если человек ушёл сам, раскрытие отменяется
@@ -537,6 +537,8 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       if (!setNdc(e)) return;
       s.pointer.inside = true;
       if (s.drag.active) {
+        // палец: сначала понимаем, куда он ведёт. Вбок — крутим кольцо, вверх-вниз — это прокрутка страницы
+        if (!lockDrag(e.clientX, e.clientY)) return;
         const L = s.layout!;
         const dx = e.clientX - s.drag.x;
         s.drag.x = e.clientX;
@@ -582,7 +584,18 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
         const L = s.layout!;
         // за кольцо можно взяться на его высоте; ниже — это вода
         if (i >= 0 || Math.abs(e.clientY - L.H * 0.45) < L.H * 0.3) {
-          s.drag = { active: true, id: e.pointerId, x: e.clientX, startX: e.clientX, startY: e.clientY, travel: 0, lastT: s.time * 1000, v: 0 };
+          s.drag = {
+            active: true,
+            id: e.pointerId,
+            x: e.clientX,
+            startX: e.clientX,
+            startY: e.clientY,
+            travel: 0,
+            lastT: s.time * 1000,
+            v: 0,
+            startRot: s.rot,
+            lock: e.pointerType === "mouse" ? "x" : "",
+          };
           s.mode = "drag";
           s.vel = 0;
           s.lastInput = s.time;
@@ -604,13 +617,55 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
           return;
         }
       }
-      s.vel = s.drag.v;
-      s.mode = "inertia";
+      settle(s.drag.v, e.clientX - s.drag.startX);
+    };
+
+    // Куда встать после перетаскивания. Раньше кольцо докатывалось по инерции и, если бросок был
+    // коротким, возвращалось к той же работе: казалось, что оно еле крутится. Теперь заметный
+    // свайп всегда приводит хотя бы к соседней работе, сильный бросок — на несколько дальше.
+    const settle = (v: number, swipe: number) => {
+      const { step } = built.ringInfo;
+      const from = Math.round(s.drag.startRot / step);
+      let to = Math.round((s.rot + clamp(v, -12, 12) * 0.28) / step);
+      if (to === from && Math.abs(swipe) > 24) to = from + Math.sign(swipe);
+      s.mode = "spring";
+      s.target = to * step;
+      s.vel = clamp(v, -8, 8);
+      s.lastInput = s.time;
+    };
+
+    // lock: "x" — ведём кольцо, "y" — человек листает страницу, кольцо отпускаем
+    const lockDrag = (x: number, y: number) => {
+      const d = s.drag;
+      if (d.lock === "x") return true;
+      if (d.lock === "y") return false;
+      const dx = Math.abs(x - d.startX);
+      const dy = Math.abs(y - d.startY);
+      if (dx + dy < 8) return false;
+      d.lock = dx > dy * 0.8 ? "x" : "y";
+      if (d.lock === "y") {
+        d.active = false;
+        s.mode = "spring";
+        s.target = Math.round(s.rot / built.ringInfo.step) * built.ringInfo.step;
+        return false;
+      }
+      d.x = x; // без рывка на первые пиксели
+      return true;
+    };
+
+    // Если палец пошёл вбок, отменяем прокрутку страницы и выделение текста, иначе браузер
+    // забирает жест себе посреди движения и кольцо застревает
+    const onTouchMove = (e: TouchEvent) => {
+      if (!s.drag.active || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      if (lockDrag(t.clientX, t.clientY) && e.cancelable) e.preventDefault();
     };
 
     function onCancel(e?: PointerEvent) {
       if (!s.drag.active || (e && e.pointerId !== s.drag.id)) return;
       s.drag.active = false;
+      // уже вели кольцо: доводим до работы, к которой тянули, а не отбрасываем назад
+      if (s.drag.lock === "x" && e) return settle(s.drag.v, s.drag.x - s.drag.startX);
       s.vel = 0;
       s.mode = "spring";
       s.target = Math.round(s.rot / built.ringInfo.step) * built.ringInfo.step;
@@ -648,12 +703,14 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     addEventListener("pointerdown", onDown, { passive: true });
     addEventListener("pointerup", onUp, { passive: true });
     addEventListener("pointercancel", onCancel, { passive: true });
+    addEventListener("touchmove", onTouchMove, { passive: false });
     document.documentElement.addEventListener("pointerleave", onLeave);
     return () => {
       removeEventListener("pointermove", onMove);
       removeEventListener("pointerdown", onDown);
       removeEventListener("pointerup", onUp);
       removeEventListener("pointercancel", onCancel);
+      removeEventListener("touchmove", onTouchMove);
       document.documentElement.removeEventListener("pointerleave", onLeave);
       offStep();
       offOpen();
