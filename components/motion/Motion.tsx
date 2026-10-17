@@ -8,6 +8,8 @@
 import Lenis from "lenis";
 import "lenis/dist/lenis.css";
 import { usePathname, useRouter } from "next/navigation";
+import { dict } from "@/lib/dict";
+import { isHome, langOf } from "@/lib/i18n";
 import { useEffect, useRef } from "react";
 import { BASE_PATH } from "@/lib/paths";
 import { on, sceneState } from "@/lib/scene-bus";
@@ -65,7 +67,7 @@ export function Motion() {
   // перестал листать вниз, она доезжает до кольца целиком, вместе с подписью и кнопками;
   // если листал вверх — до надписи.
   useEffect(() => {
-    if (trim(pathname) !== "/") return;
+    if (!isHome(pathname)) return;
     let last = scrollY;
     let dir = 0;
     let timer = 0;
@@ -270,7 +272,7 @@ export function Motion() {
     <div ref={cursor} className={s.cursor} aria-hidden="true" data-overlap-ok>
       <span className={s.fill} />
       <span className={s.ring} />
-      <span className={`${s.open} caps`}>Открыть</span>
+      <span className={`${s.open} caps`}>{dict[langOf(pathname)].cursorOpen}</span>
     </div>
   );
 }

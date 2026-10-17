@@ -56,6 +56,22 @@
   width: 28px;
 }
 
+.right {
+  display: flex;
+  align-items: center;
+  gap: clamp(var(--s-4), 2.4vw, var(--s-8));
+}
+/* RU / EN: ведёт на ту же страницу на другом языке */
+.lang {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding-left: clamp(var(--s-4), 2.4vw, var(--s-8));
+  border-left: 1px solid var(--c-line);
+}
+
 .list {
   display: flex;
   gap: clamp(var(--s-4), 2.4vw, var(--s-8));
@@ -75,6 +91,13 @@
 @media (max-width: 560px) {
   .nav {
     display: none;
+  }
+  .right {
+    gap: var(--s-2);
+  }
+  .lang {
+    padding-left: 0;
+    border-left: 0;
   }
 }
 /* до 420 пикселей пункты чуть плотнее, иначе «Связаться» не влезает */

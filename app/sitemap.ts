@@ -7,8 +7,7 @@ export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const pages = ["", "works/", "prices/", "about/", "contact/", "privacy/"];
-  return [
-    ...pages.map((p) => ({ url: absolute(SITE_ORIGIN, p) })),
-    ...getCases().map((c) => ({ url: absolute(SITE_ORIGIN, `cases/${c.slug}/`) })),
-  ];
+  const all = [...pages, ...getCases().map((c) => `cases/${c.slug}/`)];
+  // каждая страница есть на русском и под /en/ на английском
+  return [...all, ...all.map((p) => `en/${p}`)].map((p) => ({ url: absolute(SITE_ORIGIN, p) }));
 }

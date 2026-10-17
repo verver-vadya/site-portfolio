@@ -3,15 +3,12 @@
 // а до отрисовки его ставит скрипт в <head> (app/layout.tsx), чтобы страница не мигала.
 import { useEffect, useState } from "react";
 import { MorphIcon } from "morphicons/react";
+import type { Dict } from "@/lib/dict";
 import { monitor, moon, sun } from "@/lib/icons";
 import s from "./Footer.module.css";
 
 type Choice = "dark" | "light" | "system";
-const options: { value: Choice; label: string }[] = [
-  { value: "dark", label: "Тёмная" },
-  { value: "light", label: "Светлая" },
-  { value: "system", label: "Как в системе" },
-];
+const options: Choice[] = ["dark", "light", "system"];
 const COLOR = { dark: "#0b0b0c", light: "#ffffff" } as const;
 const lightQuery = () => matchMedia("(prefers-color-scheme: light)");
 
@@ -35,7 +32,7 @@ function paint(choice: Choice) {
   document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute("content", COLOR[theme]);
 }
 
-export function ThemeSwitch() {
+export function ThemeSwitch({ t }: { t: Dict["theme"] }) {
   // null до чтения выбора: иначе на миг красили бы тёмную тему поверх светлой, выставленной скриптом в <head>
   const [choice, setChoice] = useState<Choice | null>(null);
 
@@ -62,7 +59,7 @@ export function ThemeSwitch() {
   };
 
   return (
-    <div className={s.theme} role="group" aria-label="Тема сайта">
+    <div className={s.theme} role="group" aria-label={t.label}>
       {/* иконка перетекает в выбранную тему: луна, солнце или экран */}
       <MorphIcon
         className={s.themeIcon}
@@ -72,16 +69,16 @@ export function ThemeSwitch() {
         spring="smooth"
         reducedMotion="user"
       />
-      <span>Тема:</span>
+      <span>{t.title}</span>
       {options.map((o) => (
         <button
-          key={o.value}
+          key={o}
           className={s.themeBtn}
           type="button"
-          aria-pressed={choice === o.value}
-          onClick={() => pick(o.value)}
+          aria-pressed={choice === o}
+          onClick={() => pick(o)}
         >
-          {o.label}
+          {t[o]}
         </button>
       ))}
     </div>

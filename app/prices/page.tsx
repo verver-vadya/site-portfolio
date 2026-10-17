@@ -1,6 +1,4 @@
-import { Cta } from "@/components/Cta";
-import { Faq } from "@/components/prices/Faq";
-import { Prices } from "@/components/prices/Prices";
+import { PricesView } from "@/components/views/PricesView";
 import { pageMeta } from "@/lib/meta";
 
 export const metadata = pageMeta({
@@ -11,16 +9,5 @@ export const metadata = pageMeta({
 });
 
 export default function PricesPage() {
-  return (
-    <>
-      <Prices />
-      <Faq />
-      <Cta
-        links={[
-          { label: "Работы", to: "/works/" },
-          { label: "Обо мне", to: "/about/" },
-        ]}
-      />
-    </>
-  );
+  return <PricesView lang="ru" />;
 }

@@ -7,21 +7,75 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { href, type Lang } from "@/lib/i18n";
 import { owner } from "@/lib/site";
 import { SuccessMark } from "./SuccessMark";
-import { TEXT, TIMEOUT_MS, validateField, type Field } from "./validate";
+import { TEXTS, TIMEOUT_MS, validateField, type Field } from "./validate";
 import s from "./RequestForm.module.css";
 
-const types = ["Лендинг", "Визитка или портфолио", "Сайт с записью или каталогом", "Пока не знаю"];
-const terms = ["Нужно за 2–3 недели", "В течение месяца-двух", "Не горит", "Пока не знаю"];
-const budgets = ["До 20 000 ₽", "20–40 тысяч ₽", "40–70 тысяч ₽", "Больше 70 тысяч ₽", "Пока не знаю"];
+// Подписи формы на двух языках. Названия полей (name) остаются русскими: заявка приходит мне на почту.
+// Варианты «Какой сайт нужен» совпадают с value тарифов на странице цен.
+const L = {
+  ru: {
+    subject: "Заявка с сайта-портфолио",
+    types: ["Лендинг", "Визитка или портфолио", "Сайт с записью или каталогом", "Пока не знаю"],
+    terms: ["Нужно за 2–3 недели", "В течение месяца-двух", "Не горит", "Пока не знаю"],
+    budgets: ["До 20 000 ₽", "20–40 тысяч ₽", "40–70 тысяч ₽", "Больше 70 тысяч ₽", "Пока не знаю"],
+    name: <>Как к&nbsp;вам обращаться</>,
+    nameErr: "Напишите, как к вам обращаться",
+    contact: "Куда ответить",
+    contactErr: "Напишите ник в Telegram, телефон или почту",
+    contactHint: <>Ник в&nbsp;Telegram, телефон или почта</>,
+    business: "Чем занимается бизнес",
+    businessErr: "Пара слов о том, чем вы занимаетесь",
+    businessHint: <>Например: салон стрижки в&nbsp;Казани, ремонт квартир</>,
+    type: "Какой сайт нужен",
+    typeErr: "Выберите, какой сайт нужен, или «Пока не знаю»",
+    when: "Сроки",
+    budget: "Бюджет",
+    message: "Что ещё важно",
+    optional: "(необязательно)",
+    messageHint: <>Ссылка на&nbsp;сайт сейчас, примеры, которые нравятся, дата запуска</>,
+    consentErr: "Без согласия на обработку данных я не могу принять заявку",
+    consent: <>Даю согласие на&nbsp;обработку персональных данных по&nbsp;</>,
+    policy: "политике конфиденциальности",
+    send: "Отправить заявку",
+  },
+  en: {
+    subject: "Заявка с сайта-портфолио (английская версия)",
+    types: ["Landing page", "Business site or portfolio", "Site with booking or a catalogue", "Not sure yet"],
+    terms: ["Needed in 2–3 weeks", "Within a month or two", "No rush", "Not sure yet"],
+    budgets: ["Under $300", "$300–600", "$600–1,000", "Over $1,000", "Not sure yet"],
+    name: "Your name",
+    nameErr: "Please tell me what to call you",
+    contact: "Where to reply",
+    contactErr: "Enter a Telegram handle, phone number or email",
+    contactHint: <>Telegram handle, phone number with country code or&nbsp;email</>,
+    business: "What your business does",
+    businessErr: "A couple of words about what you do",
+    businessHint: <>For example: a&nbsp;hair salon in&nbsp;Berlin, apartment renovation</>,
+    type: "What kind of site",
+    typeErr: "Choose the kind of site, or “Not sure yet”",
+    when: "Timeline",
+    budget: "Budget",
+    message: "Anything else",
+    optional: "(optional)",
+    messageHint: <>A&nbsp;link to&nbsp;your current site, examples you like, a&nbsp;launch date</>,
+    consentErr: "I can’t accept the request without your consent to data processing",
+    consent: <>I&nbsp;agree to&nbsp;the processing of&nbsp;my personal data under the&nbsp;</>,
+    policy: "privacy policy",
+    send: "Send request",
+  },
+};
 
 // Порядок проверки = порядок полей; у групп переключателей ключ — id первого варианта
 const KEYS = ["f-name", "f-contact", "f-business", "f-type", "f-when", "f-budget", "f-message", "f-consent"];
 
 type Status = { state: "" | "error" | "success"; message: string };
 
-export function RequestForm() {
+export function RequestForm({ lang }: { lang: Lang }) {
+  const t = L[lang];
+  const TEXT = TEXTS[lang];
   const formRef = useRef<HTMLFormElement>(null);
   const statusRef = useRef<HTMLDivElement>(null);
   const sending = useRef(false);
@@ -47,7 +101,7 @@ export function RequestForm() {
   }, []);
 
   const el = (key: string) => formRef.current!.querySelector<Field>(`#${key}`)!;
-  const check = (key: string) => validateField(el(key), formRef.current!);
+  const check = (key: string) => validateField(el(key), formRef.current!, TEXT);
   const setError = (key: string, message: string) => setErrors((prev) => ({ ...prev, [key]: message }));
 
   // Ошибку показываем, когда человек ушёл из поля, а убираем сразу, как только он её исправил
@@ -139,19 +193,19 @@ export function RequestForm() {
   }
 
   const choices = (key: string, name: string, list: string[], required = false) =>
-    list.map((t, i) => (
-      <label key={t} className={s.choice}>
+    list.map((v, i) => (
+      <label key={v} className={s.choice}>
         <input
           id={i === 0 ? key : undefined}
           type="radio"
           name={name}
-          value={t}
+          value={v}
           required={required || undefined}
-          data-error-required={required ? "Выберите, какой сайт нужен, или «Пока не знаю»" : undefined}
+          data-error-required={required ? t.typeErr : undefined}
           onChange={recheck(key)}
           {...aria(key)}
         />
-        <span>{t}</span>
+        <span>{v}</span>
       </label>
     ));
 
@@ -164,11 +218,11 @@ export function RequestForm() {
       data-form
       onSubmit={submit}
     >
-      <input type="hidden" name="_subject" value="Заявка с сайта-портфолио" />
+      <input type="hidden" name="_subject" value={t.subject} />
 
       <div className={s.field}>
         <label className="caps" htmlFor="f-name">
-          Как к&nbsp;вам обращаться
+          {t.name}
         </label>
         <input
           id="f-name"
@@ -177,7 +231,7 @@ export function RequestForm() {
           autoComplete="name"
           required
           minLength={2}
-          data-error-required="Напишите, как к вам обращаться"
+          data-error-required={t.nameErr}
           onBlur={leave("f-name")}
           onInput={recheck("f-name")}
           {...aria("f-name")}
@@ -187,7 +241,7 @@ export function RequestForm() {
 
       <div className={s.field}>
         <label className="caps" htmlFor="f-contact">
-          Куда ответить
+          {t.contact}
         </label>
         <input
           id="f-contact"
@@ -198,20 +252,20 @@ export function RequestForm() {
           spellCheck={false}
           required
           data-validate="contact"
-          data-error-required="Напишите ник в Telegram, телефон или почту"
+          data-error-required={t.contactErr}
           onBlur={leave("f-contact")}
           onInput={recheck("f-contact")}
           {...aria("f-contact", "f-contact-hint")}
         />
         <p className={`${s.hint} muted`} id="f-contact-hint">
-          Ник в&nbsp;Telegram, телефон или почта
+          {t.contactHint}
         </p>
         {error("f-contact")}
       </div>
 
       <div className={`${s.field} ${s.wide}`}>
         <label className="caps" htmlFor="f-business">
-          Чем занимается бизнес
+          {t.business}
         </label>
         <input
           id="f-business"
@@ -219,36 +273,36 @@ export function RequestForm() {
           type="text"
           required
           minLength={3}
-          data-error-required="Пара слов о том, чем вы занимаетесь"
+          data-error-required={t.businessErr}
           onBlur={leave("f-business")}
           onInput={recheck("f-business")}
           {...aria("f-business", "f-business-hint")}
         />
         <p className={`${s.hint} muted`} id="f-business-hint">
-          Например: салон стрижки в&nbsp;Казани, ремонт квартир
+          {t.businessHint}
         </p>
         {error("f-business")}
       </div>
 
       <fieldset className={`${s.field} ${s.wide}`}>
-        <legend className="caps">Какой сайт нужен</legend>
-        <div className={s.choices}>{choices("f-type", "Какой сайт", types, true)}</div>
+        <legend className="caps">{t.type}</legend>
+        <div className={s.choices}>{choices("f-type", "Какой сайт", t.types, true)}</div>
         {error("f-type")}
       </fieldset>
 
       <fieldset className={`${s.field} ${s.wide}`}>
-        <legend className="caps">Сроки</legend>
-        <div className={s.choices}>{choices("f-when", "Сроки", terms)}</div>
+        <legend className="caps">{t.when}</legend>
+        <div className={s.choices}>{choices("f-when", "Сроки", t.terms)}</div>
       </fieldset>
 
       <fieldset className={`${s.field} ${s.wide}`}>
-        <legend className="caps">Бюджет</legend>
-        <div className={s.choices}>{choices("f-budget", "Бюджет", budgets)}</div>
+        <legend className="caps">{t.budget}</legend>
+        <div className={s.choices}>{choices("f-budget", "Бюджет", t.budgets)}</div>
       </fieldset>
 
       <div className={`${s.field} ${s.wide}`}>
         <label className="caps" htmlFor="f-message">
-          Что ещё важно <span className="muted">(необязательно)</span>
+          {t.message} <span className="muted">{t.optional}</span>
         </label>
         <textarea
           id="f-message"
@@ -260,7 +314,7 @@ export function RequestForm() {
           {...aria("f-message", "f-message-hint")}
         />
         <p className={`${s.hint} muted`} id="f-message-hint">
-          Ссылка на&nbsp;сайт сейчас, примеры, которые нравятся, дата запуска
+          {t.messageHint}
         </p>
         {error("f-message")}
       </div>
@@ -272,14 +326,14 @@ export function RequestForm() {
           type="checkbox"
           value="да"
           required
-          data-error-required="Без согласия на обработку данных я не могу принять заявку"
+          data-error-required={t.consentErr}
           onChange={recheck("f-consent")}
           {...aria("f-consent")}
         />
         <label htmlFor="f-consent">
-          Даю согласие на&nbsp;обработку персональных данных по&nbsp;
-          <Link className={`link ${s.line}`} href="/privacy/">
-            политике конфиденциальности
+          {t.consent}
+          <Link className={`link ${s.line}`} href={href(lang, "/privacy/")}>
+            {t.policy}
           </Link>
         </label>
         {error("f-consent", true)}
@@ -300,7 +354,7 @@ export function RequestForm() {
             document.addEventListener("pointerup", () => setTimeout(() => (pressingSubmit.current = false)), { once: true });
           }}
         >
-          {busy ? TEXT.sending : "Отправить заявку"}
+          {busy ? TEXT.sending : t.send}
         </button>
         <div
           ref={statusRef}
