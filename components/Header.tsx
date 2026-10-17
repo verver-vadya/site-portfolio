@@ -24,6 +24,8 @@ export function Header() {
   const path = stripLang(full); // раздел без /en
   const t = dict[lang];
   const other = lang === "en" ? "ru" : "en";
+  // на странице 404 у адреса нет пары на другом языке: ведём на главную
+  const known = /^\/((works|prices|about|contact|privacy)\/?|cases\/[^/]+\/?)?$/.test(path);
   const items = sections.map((it) => ({ ...it, label: t.nav[it.key], href: href(lang, it.to) }));
   const ref = useRef<HTMLElement>(null);
 
@@ -98,7 +100,7 @@ export function Header() {
           </nav>
           <Link
             className={`${s.lang} caps link`}
-            href={href(other, path)}
+            href={href(other, known ? path : "/")}
             hrefLang={other}
             lang={other}
             aria-label={t.lang.otherFull}

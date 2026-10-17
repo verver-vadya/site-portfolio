@@ -255,11 +255,11 @@ async function auditDom(page) {
       const personal = fields.some((el) => ["tel", "email"].includes(el.type) || /name|phone|mail/i.test(el.name));
       const consent = [...form.querySelectorAll('input[type="checkbox"]')].some((box) => {
         const label = box.id && document.querySelector(`label[for="${CSS.escape(box.id)}"]`);
-        return box.required && /персональн/i.test((label || box.closest("label"))?.textContent || "");
+        return box.required && /персональн|personal data/i.test((label || box.closest("label"))?.textContent || "");
       });
       if (personal && !consent) out.errors.push("форма собирает личные данные без обязательного согласия на их обработку (152-ФЗ)");
       if (personal && consent) {
-        const policy = [...form.querySelectorAll("a")].some((a) => /конфиденциальн|персональн/i.test(a.textContent));
+        const policy = [...form.querySelectorAll("a")].some((a) => /конфиденциальн|персональн|privacy|personal data/i.test(a.textContent));
         if (!policy) out.errors.push("в согласии нет ссылки на политику конфиденциальности");
       }
       const action = form.getAttribute("action");
@@ -678,6 +678,10 @@ async function checkForm(browser, url, index) {
   const page = await ctx.newPage();
   const flush = watchPage(page, where, url.origin);
   await page.goto(url.href);
+  // тексты формы проверяем на языке страницы: у английской версии сайта (lang="en") ошибки по-английски
+  const en = await page.evaluate(() => document.documentElement.lang.startsWith("en"));
+  const human = en ? /[a-z]/i : /[а-яё]/i;
+  const offlineWords = en ? /internet|connection|network|offline/i : /интернет|сет/i;
   const form = page.locator("form[data-form]").nth(index);
   // Подменяем адрес приёма заявок, чтобы управлять ответом сервера
   await form.evaluate((el) => { el.action = `${location.origin}/__check_submit`; });
@@ -716,7 +720,7 @@ async function checkForm(browser, url, index) {
   const messages = await form.locator(".field__error:visible, [id$='-error']:visible").allTextContents();
   if (!invalid) error(where, "пустая форма не подсвечивает ошибки (нет aria-invalid)");
   if (invalid && !focusInvalid) error(where, "после ошибки фокус не переходит на первое неверное поле");
-  if (!messages.some((m) => /[а-яё]/i.test(m))) error(where, "под полями нет понятного текста ошибки на русском");
+  if (!messages.some((m) => human.test(m))) error(where, "под полями нет понятного текста ошибки на языке страницы");
   if (requests) error(where, "пустая форма всё равно отправилась на сервер");
 
   // 2. Ошибка сервера: кнопка блокируется на время отправки, ошибка видна, данные не стёрты
@@ -727,7 +731,7 @@ async function checkForm(browser, url, index) {
   if (!(await submit.isDisabled())) error(where, "во время отправки кнопка не блокируется (возможна двойная отправка)");
   await page.waitForTimeout(600);
   let st = await statusState();
-  if (!st.visible || st.state !== "error" || !/[а-яё]/i.test(st.text)) error(where, "при ошибке сервера форма молчит или не говорит, что случилось");
+  if (!st.visible || st.state !== "error" || !human.test(st.text)) error(where, "при ошибке сервера форма молчит или не говорит, что случилось");
   if ((await values()).some((v) => !v)) error(where, "после ошибки сервера введённые данные стёрлись");
 
   // 3. Обрыв сети
@@ -744,7 +748,7 @@ async function checkForm(browser, url, index) {
   await page.waitForTimeout(300);
   if (requests > before) warn(where, "без интернета форма всё равно пытается отправиться");
   st = await statusState();
-  if (!st.visible || st.state !== "error" || !/интернет|сет/i.test(st.text)) warn(where, "без интернета форма не говорит, что дело в подключении");
+  if (!st.visible || st.state !== "error" || !offlineWords.test(st.text)) warn(where, "без интернета форма не говорит, что дело в подключении");
   await ctx.setOffline(false);
 
   // 5. Двойной клик и успех: ровно один запрос, «спасибо» после ответа, форма очищена

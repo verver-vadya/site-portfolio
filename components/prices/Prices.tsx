@@ -114,7 +114,7 @@ const text = {
     ] as [React.ReactNode, React.ReactNode][],
   },
   en: {
-    title: <>Pricing and&nbsp;timelines</>,
+    title: <>Pricing and timelines</>,
     lede: <>I give an exact price after the brief, and it doesn’t change during the work unless the task changes.</>,
     firstTag: "First five projects",
     first: <>Prices are lower than usual; in&nbsp;return I ask for a&nbsp;review and permission to show the site in&nbsp;my portfolio.</>,
