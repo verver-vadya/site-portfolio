@@ -439,7 +439,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     const cs = getComputedStyle(document.documentElement);
     const header = parseFloat(cs.getPropertyValue("--header-h")) || 64;
     const probe = document.createElement("div");
-    probe.style.cssText = "position:fixed;top:0;height:100svh;width:0;visibility:hidden";
+    probe.style.cssText = "position:fixed;top:0;height:calc(var(--svh, 1svh) * 100);width:0;visibility:hidden";
     document.body.appendChild(probe);
     const svh = probe.getBoundingClientRect().height || H;
     probe.remove();

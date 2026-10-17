@@ -3,7 +3,7 @@
 .hero {
   --ww: min(78vw, 1800px);
   position: relative;
-  height: calc(100svh - var(--header-h));
+  height: calc(calc(var(--svh, 1svh) * 100) - var(--header-h));
   min-height: 520px;
   overflow: clip;
 }
@@ -13,11 +13,11 @@
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   align-items: end;
   gap: var(--s-4) var(--s-12);
-  padding-top: clamp(var(--s-6), 4svh, var(--s-12));
+  padding-top: clamp(var(--s-6), calc(var(--svh, 1svh) * 4), var(--s-12));
 }
 .title {
   max-width: 20ch;
-  font-size: clamp(1.625rem, min(1rem + 2.2vw, 6.4svh), 3.25rem);
+  font-size: clamp(1.625rem, min(1rem + 2.2vw, calc(var(--svh, 1svh) * 6.4)), 3.25rem);
 }
 .lede {
   max-width: 36ch;

@@ -29,11 +29,20 @@ export const viewport: Viewport = {
   themeColor: "#0b0b0c",
 };
 
+// Высота экрана (--svh, --lvh) замеряется один раз и на телефоне меняется только при повороте:
+// иначе Chrome на Android пересчитывает размеры, когда прячется строка поиска.
+// Если браузер занизил большой экран, холст один раз дотягивается до настоящей высоты.
 // До первой отрисовки: тема из переключателя (тёмная по умолчанию), метка js для проявления блоков
 // и страховка: если скрипты сайта не загрузились за 3 с, всё показывается сразу
 const themeScript = `(function(){var d=document.documentElement;d.classList.add("js");try{var t=localStorage.getItem("theme");
 var l=t==="light"||(t==="system"&&matchMedia("(prefers-color-scheme: light)").matches);d.dataset.theme=l?"light":"dark";}catch(e){}
-setTimeout(function(){if(!window.__motion)d.classList.add("reveal-all")},3000)})();`;
+setTimeout(function(){if(!window.__motion)d.classList.add("reveal-all")},3000)})();
+(function(){var d=document.documentElement,w=-1,L=0,touch=matchMedia("(pointer:coarse)").matches;
+function m(){if(touch&&innerWidth===w){if(innerHeight>L){L=innerHeight;d.style.setProperty("--lvh",L/100+"px")}return}w=innerWidth;var p=document.createElement("div");
+p.style.cssText="position:fixed;top:0;left:0;width:0;visibility:hidden;height:100svh";d.appendChild(p);
+var s=p.getBoundingClientRect().height||innerHeight;p.style.height="100lvh";var l=p.getBoundingClientRect().height||innerHeight;
+d.removeChild(p);L=Math.max(s,l);d.style.setProperty("--svh",s/100+"px");d.style.setProperty("--lvh",L/100+"px")}
+m();addEventListener("resize",m)})();`;
 
 // Для 3D-сцены: скриншоты работ для панелей кольца (средний размер и самый крупный для раскрытия)
 function sceneCases(): SceneCase[] {

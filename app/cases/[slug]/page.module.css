@@ -3,7 +3,7 @@
 .hero {
   position: relative;
   width: 100%;
-  height: calc(100svh - var(--header-h));
+  height: calc(calc(var(--svh, 1svh) * 100) - var(--header-h));
   min-height: 420px;
   overflow: clip;
   background: var(--c-plate);

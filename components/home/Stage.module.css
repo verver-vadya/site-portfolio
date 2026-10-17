@@ -2,7 +2,7 @@
 .stage {
   display: none;
   position: relative;
-  height: 170svh;
+  height: calc(var(--svh, 1svh) * 170);
   touch-action: pan-y pinch-zoom; /* по горизонтали палец крутит кольцо, по вертикали листает страницу, двумя пальцами — увеличение */
   /* кольцо тянут мышью и пальцем: подсказка и подпись при этом не выделяются */
   user-select: none;
@@ -17,7 +17,7 @@
   isolation: isolate;
   position: sticky;
   top: 0;
-  height: 100svh;
+  height: calc(var(--svh, 1svh) * 100);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -54,8 +54,8 @@
 .sticky::after {
   content: "";
   position: absolute;
-  inset: auto 0 calc(100svh - 100lvh) 0;
-  height: calc(42% + 100lvh - 100svh);
+  inset: auto 0 calc(calc(var(--svh, 1svh) * 100) - calc(var(--lvh, 1lvh) * 100)) 0;
+  height: calc(42% + calc(var(--lvh, 1lvh) * 100) - calc(var(--svh, 1svh) * 100));
   z-index: -1;
   background: linear-gradient(to top, color-mix(in srgb, var(--c-paper) 88%, transparent), transparent);
   pointer-events: none;
