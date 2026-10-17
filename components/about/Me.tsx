@@ -10,14 +10,14 @@ import s from "./Me.module.css";
 const PHOTO = ["me.webp", "me.jpg", "me.jpeg", "me.png"].find((f) => fs.existsSync(path.join(process.cwd(), "public", f)));
 
 // size — диаметр в px; без него диаметр задаёт родитель через --size (по умолчанию 72 px)
-export function Me({ size, className }: { size?: number; className?: string }) {
+export function Me({ size, className, alt }: { size?: number; className?: string; alt?: string }) {
   const style = size ? ({ "--size": `${size}px` } as React.CSSProperties) : undefined;
   if (PHOTO) {
     return (
       <img
         className={`${s.me} ${className ?? ""}`}
         src={withBase(PHOTO)}
-        alt={`Фото: ${owner.name}`}
+        alt={alt ?? `Фото: ${owner.name}`}
         width={480}
         height={480}
         decoding="async"

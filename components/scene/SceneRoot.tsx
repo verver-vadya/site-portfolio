@@ -6,6 +6,7 @@
 // остаются надпись с отражением на CSS и обычный список работ.
 import { usePathname, useRouter } from "next/navigation";
 import { Component, useCallback, useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { href, isHome, langOf } from "@/lib/i18n";
 import type { SceneCase } from "@/lib/scene-bus";
 import { emit } from "@/lib/scene-bus";
 import type { SceneProps } from "./Scene";
@@ -53,7 +54,8 @@ class Fallback extends Component<{ onFail: () => void; children: ReactNode }, { 
 export function SceneRoot({ cases }: { cases: SceneCase[] }) {
   const path = usePathname();
   const router = useRouter();
-  const home = path === "/";
+  const home = isHome(path);
+  const lang = langOf(path);
   const host = useRef<HTMLDivElement>(null);
   const [ok, setOk] = useState<boolean | null>(null);
   const [Scene, setScene] = useState<ComponentType<SceneProps> | null>(null);
@@ -84,7 +86,8 @@ export function SceneRoot({ cases }: { cases: SceneCase[] }) {
     };
   }, [ok, home, Scene]);
 
-  const navigate = useCallback((href: string) => router.push(href), [router]);
+  // сцена знает только русские адреса кейсов: на английской главной ведём на /en/…
+  const navigate = useCallback((to: string) => router.push(href(lang, to)), [router, lang]);
   const onFail = useCallback(() => {
     if (host.current) host.current.dataset.mode = "";
     setOk(false);

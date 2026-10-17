@@ -24,8 +24,9 @@ export function Intro() {
 }
 
 // Скрипт для <head>: решает до первой отрисовки, показывать ли заставку
-export const introScript = (home: string) => `(function(){try{var d=document.documentElement;
-if(location.pathname!==${JSON.stringify(home)}&&location.pathname!==${JSON.stringify(home.replace(/\/$/, "") || "/")})return;
+// base — адрес превью (BASE_PATH); главная — «base/» и английская «base/en/»
+export const introScript = (base: string) => `(function(){try{var d=document.documentElement;
+var p=location.pathname.slice(${JSON.stringify(base)}.length).replace(/\\/$/,"");if(p!==""&&p!=="/en")return;
 if(matchMedia("(prefers-reduced-motion: reduce)").matches||sessionStorage.getItem("intro"))return;
 sessionStorage.setItem("intro","1");d.classList.add("is-intro");
 var done=function(){d.classList.remove("is-intro");off()};

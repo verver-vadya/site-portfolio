@@ -24,7 +24,7 @@ function Placeholder() {
   );
 }
 
-export function MobileMenuLazy({ items }: { items: Item[] }) {
+export function MobileMenuLazy({ items, label }: { items: Item[]; label: string }) {
   const [phone, setPhone] = useState(false);
   useEffect(() => {
     const mq = matchMedia("(max-width: 560px)");
@@ -33,5 +33,5 @@ export function MobileMenuLazy({ items }: { items: Item[] }) {
     mq.addEventListener("change", check);
     return () => mq.removeEventListener("change", check);
   }, []);
-  return phone ? <Bloom items={items} /> : <Placeholder />;
+  return phone ? <Bloom items={items} label={label} /> : <Placeholder />;
 }

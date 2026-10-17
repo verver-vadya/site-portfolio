@@ -1,17 +1,19 @@
 // Кейсы портфолио: одна папка = один кейс в content/cases/<папка>/
 // index.md (поля ниже + текст «Задача» и «Решение») и скриншоты рядом.
 // Новый кейс: npm run case -- <папка> <адрес сайта>
+// Английская версия кейса: index.en.md рядом (title, niche, city, summary, tagline, term и текст);
+// чего там нет, берётся из русского.
 import "server-only";
 import fs from "node:fs";
 import path from "node:path";
 import { parse } from "yaml";
 import { marked } from "marked";
 import { img, type Img } from "./images";
+import type { Lang } from "./i18n";
 
 const DIR = path.join(process.cwd(), "content/cases");
 
 export type CaseStatus = "concept" | "client";
-export const statusLabel: Record<CaseStatus, string> = { concept: "Концепт", client: "Заказ" };
 
 export type Case = {
   slug: string;
@@ -35,11 +37,19 @@ function fail(slug: string, msg: string): never {
   throw new Error(`content/cases/${slug}/index.md: ${msg}`);
 }
 
-function read(slug: string): Case {
-  const raw = fs.readFileSync(path.join(DIR, slug, "index.md"), "utf8");
+function split(slug: string, file: string) {
+  const raw = fs.readFileSync(path.join(DIR, slug, file), "utf8");
   const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
   if (!m) fail(slug, "нет блока полей между ---");
-  const d = parse(m[1]) as Record<string, unknown>;
+  return { d: parse(m[1]) as Record<string, unknown>, body: m[2] };
+}
+
+function read(slug: string, lang: Lang): Case {
+  const ru = split(slug, "index.md");
+  const enFile = path.join(DIR, slug, "index.en.md");
+  const tr = lang === "en" && fs.existsSync(enFile) ? split(slug, "index.en.md") : null;
+  const d = { ...ru.d, ...(tr?.d ?? {}) };
+  const body = tr && tr.body.trim() ? tr.body : ru.body;
   const str = (k: string, required = true) => {
     const v = d[k];
     if (v == null || v === "") {
@@ -70,24 +80,24 @@ function read(slug: string): Case {
     term: str("term", false),
     desktop: shots("desktop"),
     phone: shots("phone"),
-    html: marked.parse(m[2], { async: false }) as string,
+    html: marked.parse(body, { async: false }) as string,
   };
 }
 
-let cache: Case[] | null = null;
+const cache: Partial<Record<Lang, Case[]>> = {};
 
 // Все кейсы по порядку: поле order, потом год (новые выше)
-export function getCases(): Case[] {
-  if (!cache) {
+export function getCases(lang: Lang = "ru"): Case[] {
+  if (!cache[lang]) {
     const slugs = fs
       .readdirSync(DIR, { withFileTypes: true })
       .filter((e) => e.isDirectory() && fs.existsSync(path.join(DIR, e.name, "index.md")))
       .map((e) => e.name);
-    cache = slugs.map(read).sort((a, b) => a.order - b.order || b.year - a.year);
+    cache[lang] = slugs.map((s) => read(s, lang)).sort((a, b) => a.order - b.order || b.year - a.year);
   }
-  return cache;
+  return cache[lang]!;
 }
 
-export function getCase(slug: string) {
-  return getCases().find((c) => c.slug === slug);
+export function getCase(slug: string, lang: Lang = "ru") {
+  return getCases(lang).find((c) => c.slug === slug);
 }

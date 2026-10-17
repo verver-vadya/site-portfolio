@@ -4,20 +4,35 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { dict } from "@/lib/dict";
+import { href, langOf, stripLang } from "@/lib/i18n";
 import { Logo } from "./Logo";
 import { MobileMenuLazy } from "./MobileMenuLazy";
 import s from "./Header.module.css";
 
-const items = [
-  { to: "/works/", label: "Работы", also: "/cases/" },
-  { to: "/prices/", label: "Цены" },
-  { to: "/about/", label: "Обо мне", narrow: true },
-  { to: "/contact/", label: "Связаться" },
+type Section = { to: string; key: "works" | "prices" | "about" | "contact"; also?: string; narrow?: boolean };
+const sections: Section[] = [
+  { to: "/works/", key: "works", also: "/cases/" },
+  { to: "/prices/", key: "prices" },
+  { to: "/about/", key: "about", narrow: true },
+  { to: "/contact/", key: "contact" },
 ];
 
 export function Header() {
-  const path = usePathname() || "/";
+  const full = usePathname() || "/";
+  const lang = langOf(full);
+  const path = stripLang(full); // раздел без /en
+  const t = dict[lang];
+  const other = lang === "en" ? "ru" : "en";
+  // на странице 404 у адреса нет пары на другом языке: ведём на главную
+  const known = /^\/((works|prices|about|contact|privacy)\/?|cases\/[^/]+\/?)?$/.test(path);
+  const items = sections.map((it) => ({ ...it, label: t.nav[it.key], href: href(lang, it.to) }));
   const ref = useRef<HTMLElement>(null);
+
+  // язык страницы для экранных дикторов и переводчика браузера (переход между языками идёт без перезагрузки)
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   useEffect(() => {
     const header = ref.current;
@@ -59,30 +74,45 @@ export function Header() {
   return (
     <header ref={ref} className={s.header} data-header>
       <div className={`${s.in} wrap`}>
-        <Link className={s.mark} href="/" aria-label="verver, на главную">
+        <Link className={s.mark} href={href(lang, "/")} aria-label={t.nav.home}>
           <Logo className={s.full} />
           <Logo variant="mark" className={s.short} />
         </Link>
-        <nav className={s.nav} aria-label="Разделы">
-          <ul className={`${s.list} caps`}>
-            {items.map((it) => {
-              const here = path === it.to;
-              const inside = here || path.startsWith(it.to) || (it.also ? path.startsWith(it.also) : false);
-              return (
-                <li key={it.to} className={it.narrow ? s.narrow : undefined}>
-                  <Link
-                    className={`link ${s.item}${inside ? ` ${s.here}` : ""}`}
-                    href={it.to}
-                    aria-current={here ? "page" : undefined}
-                  >
-                    {it.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-        <MobileMenuLazy items={items.map((it) => ({ to: it.to, label: it.label, here: path === it.to }))} />
+        <div className={s.right}>
+          <nav className={s.nav} aria-label={t.nav.label}>
+            <ul className={`${s.list} caps`}>
+              {items.map((it) => {
+                const here = path === it.to;
+                const inside = here || path.startsWith(it.to) || (it.also ? path.startsWith(it.also) : false);
+                return (
+                  <li key={it.to} className={it.narrow ? s.narrow : undefined}>
+                    <Link
+                      className={`link ${s.item}${inside ? ` ${s.here}` : ""}`}
+                      href={it.href}
+                      aria-current={here ? "page" : undefined}
+                    >
+                      {it.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+          <Link
+            className={`${s.lang} caps link`}
+            href={href(other, known ? path : "/")}
+            hrefLang={other}
+            lang={other}
+            aria-label={t.lang.otherFull}
+            title={t.lang.otherFull}
+          >
+            {t.lang.other}
+          </Link>
+          <MobileMenuLazy
+            label={t.nav.menu}
+            items={items.map((it) => ({ to: it.href, label: it.label, here: path === it.to }))}
+          />
+        </div>
       </div>
     </header>
   );

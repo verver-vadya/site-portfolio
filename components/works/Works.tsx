@@ -1,12 +1,15 @@
 import { getCases } from "@/lib/cases";
+import { dict } from "@/lib/dict";
+import type { Lang } from "@/lib/i18n";
 import { CaseCard } from "./CaseCard";
 import { ViewSwitch } from "./ViewSwitch";
 import s from "./Works.module.css";
 
 // Каталог работ на серых плашках с переключателем «Компьютер / Телефон».
 // level: 1 на странице «Работы» (там это первый экран), 2 на главной (ниже другого содержимого).
-export function Works({ level = 2 }: { level?: 1 | 2 }) {
-  const cases = getCases();
+export function Works({ level = 2, lang }: { level?: 1 | 2; lang: Lang }) {
+  const cases = getCases(lang);
+  const t = dict[lang].works;
   const H = level === 1 ? "h1" : "h2";
   const below = level === 2; // на главной блок ниже первого экрана: проявляется при прокрутке
   return (
@@ -14,9 +17,9 @@ export function Works({ level = 2 }: { level?: 1 | 2 }) {
       <div className="wrap">
         <div className={s.head} data-reveal={below || undefined}>
           <H id="works-title" className={level === 1 ? s.title1 : s.title2}>
-            Работы <span className={s.count}>({cases.length})</span>
+            {t.title} <span className={s.count}>({cases.length})</span>
           </H>
-          <ViewSwitch />
+          <ViewSwitch labels={t} />
         </div>
         <ul className={s.grid}>
           {cases.map((c, i) => (
@@ -25,7 +28,7 @@ export function Works({ level = 2 }: { level?: 1 | 2 }) {
               data-reveal={below || undefined}
               style={below ? ({ "--reveal-i": i % 3 } as React.CSSProperties) : undefined}
             >
-              <CaseCard entry={c} heading={level === 1 ? "h2" : "h3"} priority={level === 1 && i < 2} />
+              <CaseCard lang={lang} entry={c} heading={level === 1 ? "h2" : "h3"} priority={level === 1 && i < 2} />
             </li>
           ))}
         </ul>

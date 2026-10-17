@@ -6,12 +6,15 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Stepper } from "pasito";
 import "pasito/styles.css";
+import { dict } from "@/lib/dict";
+import { href, type Lang } from "@/lib/i18n";
 import { emit, on, sceneState } from "@/lib/scene-bus";
 import s from "./Stage.module.css";
 
 export type StageCase = { slug: string; title: string; meta: string; tagline?: string };
 
-export function Stage({ cases }: { cases: StageCase[] }) {
+export function Stage({ cases, lang }: { cases: StageCase[]; lang: Lang }) {
+  const t = dict[lang].stage;
   const [active, setActive] = useState(() => sceneState.active);
   const [shown, setShown] = useState(false);
   // подпись зачитывается вслух только после нажатия ← →, а не при каждом шаге кольца само по себе
@@ -30,9 +33,9 @@ export function Stage({ cases }: { cases: StageCase[] }) {
   const dots = useRef<HTMLDivElement>(null);
   // у Pasito подписи точек по-английски («Step 1»): ставим свои
   useEffect(() => {
-    dots.current?.querySelector("[aria-label]")?.setAttribute("aria-label", "Работы на кольце");
+    dots.current?.querySelector("[aria-label]")?.setAttribute("aria-label", t.label);
     dots.current?.querySelectorAll<HTMLElement>(".pasito-step").forEach((el, i) => {
-      if (cases[i]) el.setAttribute("aria-label", `Работа ${i + 1}: ${cases[i].title}`);
+      if (cases[i]) el.setAttribute("aria-label", t.work(i + 1, cases[i].title));
     });
   });
 
@@ -70,11 +73,11 @@ export function Stage({ cases }: { cases: StageCase[] }) {
   };
 
   return (
-    <section ref={ref} className={s.stage} data-scene-stage aria-label="Работы на кольце">
+    <section ref={ref} className={s.stage} data-scene-stage aria-label={t.label}>
       <div className={s.sticky} data-shown={shown ? "" : undefined}>
         <p className={`${s.hint} caps muted`}>
-          <span className={s.mouse}>Тяните кольцо, чтобы покрутить, нажмите на&nbsp;экран, чтобы открыть</span>
-          <span className={s.touch}>Листайте кольцо пальцем, нажмите на&nbsp;экран, чтобы открыть</span>
+          <span className={s.mouse}>{t.mouse}</span>
+          <span className={s.touch}>{t.touch}</span>
         </p>
         <div className={`wrap ${s.caption}`}>
           <div className={s.info} aria-live={announce ? "polite" : "off"}>
@@ -95,27 +98,25 @@ export function Stage({ cases }: { cases: StageCase[] }) {
                 {pad(active + 1)} / {pad(cases.length)}
               </p>
             </div>
-            <p className="visually-hidden">
-              Работа {active + 1} из&nbsp;{cases.length}
-            </p>
+            <p className="visually-hidden">{t.of(active + 1, cases.length)}</p>
             <p className={s.title} key={c.slug}>
               {c.title}
             </p>
             <p className={`${s.meta} muted`}>{c.meta}</p>
           </div>
           <div className={s.actions}>
-            <button className="round" type="button" aria-label="Предыдущая работа" onClick={() => step(-1)}>
+            <button className="round" type="button" aria-label={t.prev} onClick={() => step(-1)}>
               <svg viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
               </svg>
             </button>
-            <button className="round" type="button" aria-label="Следующая работа" onClick={() => step(1)}>
+            <button className="round" type="button" aria-label={t.next} onClick={() => step(1)}>
               <svg viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M7.5 4.5 13 10l-5.5 5.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
               </svg>
             </button>
-            <Link className="btn" href={`/cases/${c.slug}/`} onClick={open} data-cursor="open" data-scene-open>
-              Открыть работу
+            <Link className="btn" href={href(lang, `/cases/${c.slug}/`)} onClick={open} data-cursor="open" data-scene-open>
+              {t.open}
             </Link>
           </div>
         </div>

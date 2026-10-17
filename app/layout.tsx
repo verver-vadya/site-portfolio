@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Onest, Unbounded } from "next/font/google";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { SkipLink } from "@/components/SkipLink";
 import { Intro, introScript } from "@/components/motion/Intro";
 import { Motion } from "@/components/motion/Motion";
 import { DialTune } from "@/components/DialTune";
@@ -44,6 +45,10 @@ var s=p.getBoundingClientRect().height||innerHeight;p.style.height="100lvh";var 
 d.removeChild(p);L=Math.max(s,l);d.style.setProperty("--svh",s/100+"px");d.style.setProperty("--lvh",L/100+"px")}
 m();addEventListener("resize",m)})();`;
 
+// Язык документа до первой отрисовки: английские страницы лежат под /en/ (разметка общая с русскими)
+const langScript = (base: string) =>
+  `if(/^\\/en(\\/|$)/.test(location.pathname.slice(${JSON.stringify(base)}.length)))document.documentElement.lang="en";`;
+
 // Для 3D-сцены: скриншоты работ для панелей кольца (средний размер и самый крупный для раскрытия)
 function sceneCases(): SceneCase[] {
   const shot = (img: Img, min: number) => ({
@@ -64,12 +69,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ru" data-theme="dark" className={`${display.variable} ${text.variable}`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript + introScript(`${BASE_PATH}/`) }} />
+        <script dangerouslySetInnerHTML={{ __html: langScript(BASE_PATH) + themeScript + introScript(BASE_PATH) }} />
       </head>
       <body>
-        <a className="skip" href="#main">
-          Перейти к содержимому
-        </a>
+        <SkipLink />
         <Header />
         <SceneRoot cases={sceneCases()} />
         <main id="main">{children}</main>

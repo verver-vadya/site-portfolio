@@ -2,15 +2,14 @@
 // «Компьютер / Телефон»: ставит data-view на ближайший блок с работами, карточки меняют скриншот сами (CSS)
 import { useState } from "react";
 
-const views = [
-  ["desktop", "Компьютер"],
-  ["phone", "Телефон"],
-] as const;
-
-export function ViewSwitch() {
+export function ViewSwitch({ labels }: { labels: { view: string; desktop: string; phone: string } }) {
+  const views = [
+    ["desktop", labels.desktop],
+    ["phone", labels.phone],
+  ] as const;
   const [view, setView] = useState<string>("desktop");
   return (
-    <div className="switch caps" role="group" aria-label="Какой экран показать">
+    <div className="switch caps" role="group" aria-label={labels.view}>
       {views.map(([v, label]) => (
         <button
           key={v}

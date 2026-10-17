@@ -1,6 +1,9 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { dict, type Dict } from "@/lib/dict";
+import { langOf } from "@/lib/i18n";
 import { withBase } from "@/lib/paths";
 
 // «← Назад» на странице заявки: видна, только если человек пришёл с другой страницы сайта.
@@ -26,23 +29,25 @@ function previousUrl(): URL | null {
   }
 }
 
-function label(path: string) {
-  if (path === "" || path === "index.html") return " на главную";
-  if (path.startsWith("works/")) return " к работам";
-  if (path.startsWith("cases/")) return " к работе";
-  if (path.startsWith("prices/")) return " к ценам";
+function label(path: string, t: Dict["back"]) {
+  path = path.replace(/^en(\/|$)/, "");
+  if (path === "" || path === "index.html") return t.home;
+  if (path.startsWith("works/")) return t.works;
+  if (path.startsWith("cases/")) return t.case;
+  if (path.startsWith("prices/")) return t.prices;
   return "";
 }
 
 export function BackLink({ className }: { className?: string }) {
+  const t = dict[langOf(usePathname())].back;
   const [back, setBack] = useState<{ href: string; text: string } | null>(null);
 
   useEffect(() => {
     const base = withBase("");
     const from = previousUrl();
     if (!from || from.origin !== location.origin || !from.pathname.startsWith(base) || from.pathname === location.pathname) return;
-    setBack({ href: from.href, text: `← Назад${label(from.pathname.slice(base.length))}` });
-  }, []);
+    setBack({ href: from.href, text: `${t.back}${label(from.pathname.slice(base.length), t)}` });
+  }, [t]);
 
   return (
     <a
@@ -58,7 +63,7 @@ export function BackLink({ className }: { className?: string }) {
         }
       }}
     >
-      {back?.text ?? "← Назад"}
+      {back?.text ?? t.back}
     </a>
   );
 }

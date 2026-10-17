@@ -1,5 +1,4 @@
-import { About } from "@/components/about/About";
-import { Cta } from "@/components/Cta";
+import { AboutView } from "@/components/views/AboutView";
 import { pageMeta } from "@/lib/meta";
 
 export const metadata = pageMeta({
@@ -9,15 +8,5 @@ export const metadata = pageMeta({
 });
 
 export default function AboutPage() {
-  return (
-    <>
-      <About />
-      <Cta
-        links={[
-          { label: "Работы", to: "/works/" },
-          { label: "Цены и сроки", to: "/prices/" },
-        ]}
-      />
-    </>
-  );
+  return <AboutView lang="ru" />;
 }
