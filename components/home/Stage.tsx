@@ -75,12 +75,12 @@ export function Stage({ cases, lang }: { cases: StageCase[]; lang: Lang }) {
 
   return (
     <section ref={ref} className={s.stage} data-scene-stage aria-label={t.label}>
-      <div className={s.sticky} data-shown={shown ? "" : undefined}>
+      <div className={s.sticky} data-shown={shown ? "" : undefined} data-scene-sticky>
         <p className={`${s.hint} caps muted`}>
           <span className={s.mouse}>{t.mouse}</span>
           <span className={s.touch}>{t.touch}</span>
         </p>
-        <div className={`wrap ${s.caption}`}>
+        <div className={`wrap ${s.caption}`} data-scene-caption>
           <div className={s.info} aria-live={announce ? "polite" : "off"}>
             <div className={s.dots} ref={dots}>
               <Stepper

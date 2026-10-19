@@ -335,8 +335,19 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     const R = built.ringInfo.radius;
     const ringDist = R * Math.sqrt(1 + Math.pow(1 / RING_TAN / Math.max(aspect, 0.85) / 0.9, 2));
     const ringWpp = (2 * (ringDist - R) * RING_TAN) / H;
-    // на вертикальном экране подпись закрывает низ: лента встаёт на 40 % высоты вместо середины
-    const ringShift = aspect < 1 ? 0.2 * (ringDist - R) * RING_TAN : 0;
+    // на вертикальном экране подпись закрывает низ: лента поднимается так, чтобы её низ был
+    // в 40 px над подписью, но не выше 40 % высоты (на высоком экране иначе остаётся пустая полоса)
+    let ringShift = 0;
+    if (aspect < 1) {
+      const max = 0.2 * (ringDist - R) * RING_TAN;
+      const caption = document.querySelector<HTMLElement>("[data-scene-caption]");
+      const sticky = caption?.offsetParent ? caption.closest<HTMLElement>("[data-scene-sticky]") : null;
+      if (caption && sticky) {
+        const top = caption.getBoundingClientRect().top - sticky.getBoundingClientRect().top;
+        const bottom = H / 2 + HP / 2 / ringWpp; // низ передней панели без сдвига, px
+        ringShift = clamp((bottom - (top - 40)) * ringWpp, 0, max);
+      } else ringShift = prev?.ringShift ?? max;
+    }
     st.current.layout = { W, H, D, wpp, camY, scale, left, ringDist, ringWpp, ringShift };
 
     built.shared.uReflH.value = Math.max(0.6, WORD_H * scale * 1.5);
