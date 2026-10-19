@@ -246,7 +246,8 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     prevRise: 0,
     passKey: "", // отражение и подводный проход с прошлого кадра (см. «три прохода»)
     spin: 0.9, // доворот кольца при подъёме, сглаженный
-    sink: 0, // 0..1: кольцо уходит под воду, когда листают назад к надписи
+    sink: 0, // 0..1: кольцо уходит под воду, когда листают назад к надписи (только до первого подъёма)
+    ringOff: 0, // после подъёма: на сколько пикселей кольцо сдвинуто вниз вместе с блоком на странице
     wordP: 0, // как глубоко ушла надпись, сглаженно
     enterT: 0, // время появления 0..1, без сглаживания
     enterWant: false,
@@ -334,8 +335,19 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     const R = built.ringInfo.radius;
     const ringDist = R * Math.sqrt(1 + Math.pow(1 / RING_TAN / Math.max(aspect, 0.85) / 0.9, 2));
     const ringWpp = (2 * (ringDist - R) * RING_TAN) / H;
-    // на вертикальном экране подпись закрывает низ: лента встаёт на 40 % высоты вместо середины
-    const ringShift = aspect < 1 ? 0.2 * (ringDist - R) * RING_TAN : 0;
+    // на вертикальном экране подпись закрывает низ: лента поднимается так, чтобы её низ был
+    // в 40 px над подписью, но не выше 40 % высоты (на высоком экране иначе остаётся пустая полоса)
+    let ringShift = 0;
+    if (aspect < 1) {
+      const max = 0.2 * (ringDist - R) * RING_TAN;
+      const caption = document.querySelector<HTMLElement>("[data-scene-caption]");
+      const sticky = caption?.offsetParent ? caption.closest<HTMLElement>("[data-scene-sticky]") : null;
+      if (caption && sticky) {
+        const top = caption.getBoundingClientRect().top - sticky.getBoundingClientRect().top;
+        const bottom = H / 2 + HP / 2 / ringWpp; // низ передней панели без сдвига, px
+        ringShift = clamp((bottom - (top - 40)) * ringWpp, 0, max);
+      } else ringShift = prev?.ringShift ?? max;
+    }
     st.current.layout = { W, H, D, wpp, camY, scale, left, ringDist, ringWpp, ringShift };
 
     built.shared.uReflH.value = Math.max(0.6, WORD_H * scale * 1.5);
@@ -388,6 +400,8 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       for (const p of built.panels) {
         const done = (tex: THREE.Texture) => {
           if (cancelled) return;
+          // картинка уходит в видеокарту сразу, а не в тот кадр, когда кольцо впервые покажется
+          gl.initTexture(tex);
           p.u.uMap.value = tex;
           p.u.uHasMap.value = 1;
         };
@@ -782,6 +796,76 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [built, camera, raycaster, ndc, waterPlane, tmp, navigate]);
 
+  // ---------- кадр одной камерой: отражение, подводная часть и основной кадр ----------
+  // scissor — какую полосу холста рисовать (x, y от низа, ширина, высота), null — весь холст.
+  // reuseOk: можно взять отражение с прошлого кадра (когда камер две, каждая рисует его заново)
+  const heroCam = useMemo(() => new THREE.PerspectiveCamera(FOV, 1, 0.1, 1200), []);
+  const drawView = (cam: THREE.PerspectiveCamera, scissor: [number, number, number, number] | null, reuseOk: boolean) => {
+    const s = st.current;
+    const sh = built.shared;
+    const prevClip = gl.clippingPlanes;
+
+    // 1. отражение: мир перевёрнут под воду, остаётся только то, что было над водой.
+    // Кольцо в воде не отражается и под водой не видно: у кольца вода лишняя
+    const ringOn = built.ring.visible;
+    built.ring.visible = false;
+    built.water.visible = false;
+    built.fade.visible = false;
+    // Когда надпись ушла под воду, в отражении и под водой остаётся только небо: пока камера,
+    // цвета и размер кадра те же, эти два прохода дают ту же картинку, и их можно не рисовать
+    cam.updateMatrixWorld();
+    const passKey = built.wordGroup.visible || !reuseOk
+      ? ""
+      : [
+          cam.matrixWorld.elements.join(),
+          cam.projectionMatrix.elements.join(),
+          s.colors.paper.getHex(),
+          sh.uDeep.value.getHex(),
+          sh.uGlow.value.getHex(),
+          built.reflect.width,
+          built.reflect.height,
+        ].join("|");
+    const reuse = passKey !== "" && passKey === s.passKey;
+    s.passKey = passKey;
+    if (!reuse) {
+      built.world.scale.y = -1;
+      built.world.updateMatrixWorld();
+      sh.uPass.value = 1;
+      gl.clippingPlanes = built.keepBelow;
+      gl.setClearColor(s.colors.paper);
+      gl.setRenderTarget(built.reflect);
+      gl.render(built.scene, cam);
+
+      // 2. под водой: только то, что ниже поверхности, без неба
+      built.world.scale.y = 1;
+      built.world.updateMatrixWorld();
+      sh.uPass.value = 2;
+      built.sky.visible = false;
+      gl.setClearColor(sh.uDeep.value);
+      gl.setRenderTarget(built.refract);
+      gl.render(built.scene, cam);
+      built.sky.visible = true;
+    }
+
+    // 3. основной кадр
+    built.ring.visible = ringOn;
+    sh.uPass.value = 0;
+    gl.clippingPlanes = built.keepAbove;
+    built.water.visible = true;
+    built.fade.visible = !!s.expand;
+    built.waterU.tReflect.value = built.reflect.texture;
+    built.waterU.tRefract.value = built.refract.texture;
+    gl.setClearColor(s.colors.paper);
+    gl.setRenderTarget(null);
+    if (scissor) {
+      gl.setScissor(...scissor);
+      gl.setScissorTest(true);
+    }
+    gl.render(built.scene, cam);
+    if (scissor) gl.setScissorTest(false);
+    gl.clippingPlanes = prevClip;
+  };
+
   // ---------- каждый кадр ----------
   useFrame((_, rawDt) => {
     const s = st.current;
@@ -799,15 +883,28 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       if (Math.abs(raw - s.progress) < 1e-4) s.progress = raw;
     }
     const p = s.progress;
+    // верх блока с кольцом на экране: после подъёма кольцо стоит в нём и уезжает вместе со страницей
+    const stage = document.querySelector<HTMLElement>("[data-scene-stage]");
+    const stageTop = stage && !s.expand ? stage.getBoundingClientRect().top : null;
 
     // Кольцо появляется, когда буквы почти ушли под воду: лента всплывает, лежит на воде широким
     // кругом и встаёт стеной (как в DialKit, шейдер в materials.ts). Идёт по времени, а не за
     // прокруткой: 2,9 секунды, быстро в начале и долго, мягко в конце. Назад к надписи кольцо
     // целиком уходит под воду за 0,7 секунды, и только потом всплывает надпись.
-    if (p > 0.55) s.enterWant = true;
+    // Подъём играет один раз, пока страницу не обновят. Потом кольцо не тонет и не всплывает:
+    // когда листают вверх, оно уезжает вниз вместе с блоком, а сверху открывается надпись.
+    const page = sceneState.risen;
+    if (page) {
+      s.enterWant = true;
+      s.enterT = 1;
+      s.sink = 0;
+      if (stageTop !== null) s.ringOff = clamp(Math.round(stageTop), 0, L.H);
+    } else if (p > 0.55) s.enterWant = true;
     else if (p < 0.48) s.enterWant = false;
     s.prevRise = s.rise;
-    if (s.enterWant) {
+    if (page) {
+      // кольцо стоит на месте
+    } else if (s.enterWant) {
       if (s.sink >= 1) {
         // ушло под воду целиком: следующий подъём снова с самого начала
         s.sink = 0;
@@ -824,11 +921,13 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     built.enterU.uEnterLin.value = s.enterT;
     const sk = s.sink * s.sink * (3 - 2 * s.sink);
     built.ring.position.set(0, -sk * (LIFT + HP + 0.3), -built.ringInfo.radius);
-    built.ring.visible = s.rise > 0.001 && s.sink < 1;
+    built.ring.visible = s.rise > 0.001 && s.sink < 1 && s.ringOff < L.H;
+    // подъём закончился, и блок с кольцом встал на место: дальше кольцо ездит со страницей
+    if (!page && s.enterT >= 1 && stageTop !== null && stageTop <= 1) sceneState.risen = true;
 
     // буквы: покачиваются на воде и по очереди тонут. Пока кольцо над водой, надпись ждёт под водой
     const wordH = WORD_H * L.scale;
-    const wordTo = built.ring.visible && !s.enterWant ? 1 : p;
+    const wordTo = !page && built.ring.visible && !s.enterWant ? 1 : p;
     s.wordP += (wordTo - s.wordP) * (1 - Math.exp(-dt * 6));
     const wp = s.wordP;
     built.letters.forEach((l, i) => {
@@ -865,7 +964,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       s.rot += s.vel * dt;
       // само не крутится, пока на кольце курсор или фокус с клавиатуры (кнопки подписи)
       const focused = !!document.activeElement?.closest("[data-scene-stage]");
-      const idle = s.time - s.lastInput > 7 && s.hovered < 0 && !focused && !s.expand && s.rise > 0.97;
+      const idle = s.time - s.lastInput > 7 && s.hovered < 0 && !focused && !s.expand && s.rise > 0.97 && s.ringOff < 1;
       if (idle && s.time > s.autoAt) {
         s.target = Math.round(s.rot / step) * step - step;
         s.autoAt = s.time + tune.autoStep;
@@ -910,19 +1009,38 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
 
     // камера: от низкого взгляда над водой с узким объективом к кольцу, как в DialKit: прямо на
     // ленту на уровне её середины, широким объективом, чтобы экраны выглядели выгнутыми
-    const e = smooth(clamp(p / 0.92));
+    // После подъёма камера не летит: надпись снимает камера первого экрана, кольцо — камера кольца,
+    // сдвинутая вниз на ringOff пикселей (каждая рисует свою часть экрана, см. «три прохода»)
+    const split = page && s.ringOff > 0 && s.ringOff < L.H;
+    const e = page ? (s.ringOff < L.H ? 1 : 0) : smooth(clamp(p / 0.92));
     const R = built.ringInfo.radius;
     const mid = LIFT + HP / 2;
     const ringPos = tmp.pos.set(0, mid - L.ringShift, -R + L.ringDist);
     const heroPos = tmp.v.set(0, L.camY, L.D);
-    camera.position.lerpVectors(heroPos, ringPos, e);
     const heroTarget = new THREE.Vector3(0, L.camY, 0);
     const ringTarget = new THREE.Vector3(0, mid - L.ringShift, -R);
+    if (split) {
+      heroCam.aspect = camera.aspect;
+      heroCam.position.copy(heroPos);
+      heroCam.lookAt(heroTarget);
+      if (heroCam.fov !== FOV || heroCam.near !== camera.near || heroCam.far !== camera.far) {
+        heroCam.fov = FOV;
+        heroCam.near = camera.near;
+        heroCam.far = camera.far;
+      }
+      heroCam.updateProjectionMatrix();
+      heroCam.updateMatrixWorld();
+    }
+    camera.position.lerpVectors(heroPos, ringPos, e);
     tmp.target.lerpVectors(heroTarget, ringTarget, e);
     camera.lookAt(tmp.target);
     const fov = FOV + (RING_FOV - FOV) * e;
-    if (Math.abs(camera.fov - fov) > 1e-4) {
+    const off = page && e === 1 ? s.ringOff : 0;
+    const view = camera.view;
+    if (Math.abs(camera.fov - fov) > 1e-4 || (view?.enabled ? view.offsetY : 0) !== -off) {
       camera.fov = fov;
+      if (off) camera.setViewOffset(L.W, L.H, 0, -off, L.W, L.H);
+      else camera.clearViewOffset();
       camera.updateProjectionMatrix();
     }
     camera.updateMatrixWorld();
@@ -981,63 +1099,38 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     built.waterU.uTime.value = s.time;
 
     // ---------- три прохода ----------
-    const sh = built.shared;
-    const prevClip = gl.clippingPlanes;
-
-    // 1. отражение: мир перевёрнут под воду, остаётся только то, что было над водой.
-    // Кольцо в воде не отражается и под водой не видно: у кольца вода лишняя
+    // Пока кольцо въезжает или уезжает вместе со страницей, экран делится по верхнему краю блока
+    // с кольцом: выше рисуем первый экран с надписью, ниже — кольцо, каждое своей камерой.
     const ringOn = built.ring.visible;
-    built.ring.visible = false;
-    built.water.visible = false;
-    built.fade.visible = false;
-    // Когда надпись ушла под воду, в отражении и под водой остаётся только небо: пока камера,
-    // цвета и размер кадра те же, эти два прохода дают ту же картинку, и их можно не рисовать
-    camera.updateMatrixWorld();
-    const passKey = built.wordGroup.visible
-      ? ""
-      : [
-          camera.matrixWorld.elements.join(),
-          camera.projectionMatrix.elements.join(),
-          s.colors.paper.getHex(),
-          sh.uDeep.value.getHex(),
-          sh.uGlow.value.getHex(),
-          built.reflect.width,
-          built.reflect.height,
-        ].join("|");
-    const reuse = passKey !== "" && passKey === s.passKey;
-    s.passKey = passKey;
-    if (!reuse) {
-      built.world.scale.y = -1;
-      built.world.updateMatrixWorld();
-      sh.uPass.value = 1;
+    const wordOn = built.wordGroup.visible;
+    // Первый кадр, пока холст ещё не показан: рисуем всё, что вообще бывает в кадре, во всех
+    // проходах. Кольцо скрыто до прокрутки, и без этого его шейдеры собирались бы в тот кадр, когда
+    // оно впервые появляется: страница замирала на полсекунды и больше. Обычный кадр ниже всё перерисует.
+    if (!s.ready) {
+      const objs = [built.ring, built.wordGroup, built.water, built.sky, built.fade];
+      const vis = objs.map((o) => o.visible);
+      const prevClip = gl.clippingPlanes;
+      objs.forEach((o) => (o.visible = true));
       gl.clippingPlanes = built.keepBelow;
-      gl.setClearColor(s.colors.paper);
-      gl.setRenderTarget(built.reflect);
-      gl.render(built.scene, camera);
-
-      // 2. под водой: только то, что ниже поверхности, без неба
-      built.world.scale.y = 1;
-      built.world.updateMatrixWorld();
-      sh.uPass.value = 2;
-      built.sky.visible = false;
-      gl.setClearColor(sh.uDeep.value);
       gl.setRenderTarget(built.refract);
       gl.render(built.scene, camera);
-      built.sky.visible = true;
+      gl.clippingPlanes = built.keepAbove;
+      gl.setRenderTarget(null);
+      gl.render(built.scene, camera);
+      gl.clippingPlanes = prevClip;
+      objs.forEach((o, i) => (o.visible = vis[i]));
     }
-
-    // 3. основной кадр
-    built.ring.visible = ringOn;
-    sh.uPass.value = 0;
-    gl.clippingPlanes = built.keepAbove;
-    built.water.visible = true;
-    built.fade.visible = !!s.expand;
-    built.waterU.tReflect.value = built.reflect.texture;
-    built.waterU.tRefract.value = built.refract.texture;
-    gl.setClearColor(s.colors.paper);
-    gl.setRenderTarget(null);
-    gl.render(built.scene, camera);
-    gl.clippingPlanes = prevClip;
+    if (split) {
+      const cut = L.H - s.ringOff; // высота нижней части, от низа холста
+      built.ring.visible = false;
+      drawView(heroCam, [0, cut, L.W, s.ringOff], false);
+      built.ring.visible = ringOn;
+      built.wordGroup.visible = false;
+      drawView(camera, [0, 0, L.W, cut], false);
+      built.wordGroup.visible = wordOn;
+    } else {
+      drawView(camera, null, true);
+    }
 
     if (!s.ready) {
       s.ready = true;

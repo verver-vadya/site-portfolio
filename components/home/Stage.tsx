@@ -39,7 +39,8 @@ export function Stage({ cases, lang }: { cases: StageCase[]; lang: Lang }) {
     });
   });
 
-  // подпись видна, пока кольцо стоит на экране
+  // подпись видна, пока кольцо стоит на экране; после первого подъёма кольцо ездит вместе с блоком,
+  // и подпись с кнопками тоже не исчезает, а уезжает вместе с ним
   useEffect(() => {
     let raf = 0;
     const check = () => {
@@ -47,7 +48,7 @@ export function Stage({ cases, lang }: { cases: StageCase[]; lang: Lang }) {
       const el = ref.current;
       if (!el) return;
       const r = el.getBoundingClientRect();
-      setShown(r.top < innerHeight * 0.25 && r.bottom > innerHeight * 0.6);
+      setShown(r.top < innerHeight * (sceneState.risen ? 1 : 0.25) && r.bottom > innerHeight * 0.6);
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(check);
@@ -74,12 +75,12 @@ export function Stage({ cases, lang }: { cases: StageCase[]; lang: Lang }) {
 
   return (
     <section ref={ref} className={s.stage} data-scene-stage aria-label={t.label}>
-      <div className={s.sticky} data-shown={shown ? "" : undefined}>
+      <div className={s.sticky} data-shown={shown ? "" : undefined} data-scene-sticky>
         <p className={`${s.hint} caps muted`}>
           <span className={s.mouse}>{t.mouse}</span>
           <span className={s.touch}>{t.touch}</span>
         </p>
-        <div className={`wrap ${s.caption}`}>
+        <div className={`wrap ${s.caption}`} data-scene-caption>
           <div className={s.info} aria-live={announce ? "polite" : "off"}>
             <div className={s.dots} ref={dots}>
               <Stepper
