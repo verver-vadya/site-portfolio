@@ -26,5 +26,7 @@ export type SceneShot = { src: string; large: string; width: number; height: num
 export type SceneCase = { slug: string; title: string; shots: SceneShot[]; phone: SceneShot[] };
 
 // live: сцена жива и сама обрабатывает «Открыть» (иначе ссылка работает как обычно);
-// active: какая работа сейчас спереди (подпись берёт её, когда снова появляется на главной)
-export const sceneState = { live: false, active: 0 };
+// active: какая работа сейчас спереди (подпись берёт её, когда снова появляется на главной);
+// risen: кольцо уже поднялось из воды. Подъём играет один раз, пока страницу не обновят,
+// дальше кольцо ездит вместе со страницей, как обычный блок
+export const sceneState = { live: false, active: 0, risen: false };
