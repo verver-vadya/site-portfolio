@@ -400,6 +400,8 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       for (const p of built.panels) {
         const done = (tex: THREE.Texture) => {
           if (cancelled) return;
+          // картинка уходит в видеокарту сразу, а не в тот кадр, когда кольцо впервые покажется
+          gl.initTexture(tex);
           p.u.uMap.value = tex;
           p.u.uHasMap.value = 1;
         };
@@ -1101,6 +1103,23 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     // с кольцом: выше рисуем первый экран с надписью, ниже — кольцо, каждое своей камерой.
     const ringOn = built.ring.visible;
     const wordOn = built.wordGroup.visible;
+    // Первый кадр, пока холст ещё не показан: рисуем всё, что вообще бывает в кадре, во всех
+    // проходах. Кольцо скрыто до прокрутки, и без этого его шейдеры собирались бы в тот кадр, когда
+    // оно впервые появляется: страница замирала на полсекунды и больше. Обычный кадр ниже всё перерисует.
+    if (!s.ready) {
+      const objs = [built.ring, built.wordGroup, built.water, built.sky, built.fade];
+      const vis = objs.map((o) => o.visible);
+      const prevClip = gl.clippingPlanes;
+      objs.forEach((o) => (o.visible = true));
+      gl.clippingPlanes = built.keepBelow;
+      gl.setRenderTarget(built.refract);
+      gl.render(built.scene, camera);
+      gl.clippingPlanes = built.keepAbove;
+      gl.setRenderTarget(null);
+      gl.render(built.scene, camera);
+      gl.clippingPlanes = prevClip;
+      objs.forEach((o, i) => (o.visible = vis[i]));
+    }
     if (split) {
       const cut = L.H - s.ringOff; // высота нижней части, от низа холста
       built.ring.visible = false;
