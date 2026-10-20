@@ -3,10 +3,10 @@
 // Текущий раздел подчёркнут (у «Работ» ещё и страницы кейсов).
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { dict } from "@/lib/dict";
 import { href, langOf, stripLang } from "@/lib/i18n";
-import { Logo, type TeamVariant } from "./Logo";
+import { Logo } from "./Logo";
 import { MobileMenuLazy } from "./MobileMenuLazy";
 import s from "./Header.module.css";
 
@@ -29,14 +29,6 @@ export function Header() {
   const known = /^\/((works|prices|about|contact|privacy|collective)\/?|cases\/[^/]+\/?)?$/.test(path);
   const items = sections.map((it) => ({ ...it, label: t.nav[it.key], href: href(lang, it.to) }));
   const ref = useRef<HTMLElement>(null);
-  // на странице «Объединения» знак раскладывается на несколько ромбов (components/Logo.tsx)
-  const team = /^\/collective\/?$/.test(path);
-  // пока выбираем раскладку: ?mark=a|b|c
-  const [teamVariant, setTeamVariant] = useState<TeamVariant>("b");
-  useEffect(() => {
-    const v = new URLSearchParams(location.search).get("mark");
-    if (v === "a" || v === "b" || v === "c") setTeamVariant(v);
-  }, []);
 
   // язык страницы для экранных дикторов и переводчика браузера (переход между языками идёт без перезагрузки)
   useEffect(() => {
@@ -83,9 +75,9 @@ export function Header() {
   return (
     <header ref={ref} className={s.header} data-header>
       <div className={`${s.in} wrap`}>
-        <Link className={s.mark} href={href(lang, "/")} aria-label={t.nav.home} data-team-on={team || undefined}>
-          <Logo className={s.full} team={teamVariant} />
-          <Logo variant="mark" className={s.short} team={teamVariant} />
+        <Link className={s.mark} href={href(lang, "/")} aria-label={t.nav.home}>
+          <Logo className={s.full} />
+          <Logo variant="mark" className={s.short} />
         </Link>
         <div className={s.right}>
           <nav className={s.nav} aria-label={t.nav.label}>
