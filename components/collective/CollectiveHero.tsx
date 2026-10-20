@@ -1,8 +1,8 @@
 import type { Lang } from "@/lib/i18n";
-import { Sparks } from "./Sparks";
 import s from "./CollectiveHero.module.css";
 
-// Первый экран страницы «Объединение»: сетка, искры и огромная надпись в несколько строк.
+// Первый экран страницы «Объединение»: сетка и огромная надпись в несколько строк
+// (искры лежат под всей страницей, components/views/CollectiveView.tsx).
 // Строки выезжают снизу из-под своей кромки (CSS, поэтому текст виден и без JS).
 const text = {
   ru: {
@@ -24,7 +24,6 @@ export function CollectiveHero({ lang }: { lang: Lang }) {
   return (
     <section className={s.hero} aria-labelledby="collective-title">
       <div className={s.grid} aria-hidden="true" />
-      <Sparks className={s.sparks} />
       <div className={`wrap ${s.in}`}>
         <p className={`${s.pill} caps`}>{t.label}</p>
         <h1 id="collective-title" className={s.title} aria-label={t.title}>

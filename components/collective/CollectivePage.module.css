@@ -1,0 +1,26 @@
+/* Искры на всю страницу «Объединения»: холст в слое, который прилипает к экрану (sticky)
+   и едет вместе с последним разделом, поэтому на подвал искры не заходят.
+   Карточки с фоном закрывают искры, текст лежит поверх них. */
+.page {
+  position: relative;
+  isolation: isolate;
+}
+.layer {
+  position: sticky;
+  top: 0;
+  z-index: -1;
+  height: 100lvh;
+  margin-bottom: -100lvh;
+  pointer-events: none;
+}
+.sparks {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--c-ink);
+}
+@media print {
+  .layer {
+    display: none;
+  }
+}
