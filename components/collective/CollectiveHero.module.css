@@ -55,13 +55,13 @@
 .title {
   display: grid;
   font-size: min(
-    calc((100vw - 2 * var(--gutter)) / 8.9),
+    calc((100vw - 2 * var(--gutter)) / 9.1),
     calc((calc(var(--svh, 1svh) * 100) - var(--header-h) - 15rem) / 4.2),
     13.5rem
   );
   font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.015em;
   text-transform: uppercase;
 }
 .line {
