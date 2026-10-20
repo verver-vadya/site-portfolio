@@ -17,6 +17,7 @@
 - **Pasito** (Josh Puckett) — точки работ под кольцом, лицензия MIT.
 - **morphicons** (guillermolg00) — иконки темы и «Скопировать» перетекают одна в другую, лицензия MIT; рисунки иконок из **Lucide** (ISC).
 - **Lenis** (плавная прокрутка) — лицензия MIT.
+- **GSAP** с плагинами ScrollTrigger и CustomEase (GreenSock, сейчас Webflow) — стандартная бесплатная лицензия https://gsap.com/standard-license (разрешает коммерческое использование); **@gsap/react** — лицензия MIT. Подключение и наши кривые в `lib/gsap.ts`.
 - **marked** (тексты кейсов из Markdown) — лицензия MIT.
 - **yaml** — лицензия ISC.
 
