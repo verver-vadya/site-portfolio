@@ -88,7 +88,7 @@
 }
 
 /* на телефоне разделы прячутся в меню (MobileMenu), в шапке логотип целиком и кнопка меню */
-@media (max-width: 560px) {
+@media (max-width: 600px) {
   .nav {
     display: none;
   }
@@ -98,6 +98,15 @@
   .lang {
     padding-left: 0;
     border-left: 0;
+  }
+}
+/* на узком планшете пять разделов и надпись вместе не влезают: остаётся один знак */
+@media (min-width: 601px) and (max-width: 740px) {
+  .full {
+    display: none;
+  }
+  .short {
+    display: block;
   }
 }
 /* до 420 пикселей пункты чуть плотнее, иначе «Связаться» не влезает */

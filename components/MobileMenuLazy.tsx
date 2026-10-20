@@ -27,7 +27,7 @@ function Placeholder() {
 export function MobileMenuLazy({ items, label }: { items: Item[]; label: string }) {
   const [phone, setPhone] = useState(false);
   useEffect(() => {
-    const mq = matchMedia("(max-width: 560px)");
+    const mq = matchMedia("(max-width: 600px)");
     const check = () => setPhone(mq.matches);
     check();
     mq.addEventListener("change", check);

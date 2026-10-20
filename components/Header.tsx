@@ -3,18 +3,19 @@
 // Текущий раздел подчёркнут (у «Работ» ещё и страницы кейсов).
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { dict } from "@/lib/dict";
 import { href, langOf, stripLang } from "@/lib/i18n";
-import { Logo } from "./Logo";
+import { Logo, type TeamVariant } from "./Logo";
 import { MobileMenuLazy } from "./MobileMenuLazy";
 import s from "./Header.module.css";
 
-type Section = { to: string; key: "works" | "prices" | "about" | "contact"; also?: string; narrow?: boolean };
+type Section = { to: string; key: "works" | "prices" | "about" | "collective" | "contact"; also?: string; narrow?: boolean };
 const sections: Section[] = [
   { to: "/works/", key: "works", also: "/cases/" },
   { to: "/prices/", key: "prices" },
   { to: "/about/", key: "about", narrow: true },
+  { to: "/collective/", key: "collective" },
   { to: "/contact/", key: "contact" },
 ];
 
@@ -28,6 +29,14 @@ export function Header() {
   const known = /^\/((works|prices|about|contact|privacy|collective)\/?|cases\/[^/]+\/?)?$/.test(path);
   const items = sections.map((it) => ({ ...it, label: t.nav[it.key], href: href(lang, it.to) }));
   const ref = useRef<HTMLElement>(null);
+  // на странице «Объединения» знак раскладывается на несколько ромбов (components/Logo.tsx)
+  const team = /^\/collective\/?$/.test(path);
+  // пока выбираем раскладку: ?mark=a|b|c
+  const [teamVariant, setTeamVariant] = useState<TeamVariant>("b");
+  useEffect(() => {
+    const v = new URLSearchParams(location.search).get("mark");
+    if (v === "a" || v === "b" || v === "c") setTeamVariant(v);
+  }, []);
 
   // язык страницы для экранных дикторов и переводчика браузера (переход между языками идёт без перезагрузки)
   useEffect(() => {
@@ -74,9 +83,9 @@ export function Header() {
   return (
     <header ref={ref} className={s.header} data-header>
       <div className={`${s.in} wrap`}>
-        <Link className={s.mark} href={href(lang, "/")} aria-label={t.nav.home}>
-          <Logo className={s.full} />
-          <Logo variant="mark" className={s.short} />
+        <Link className={s.mark} href={href(lang, "/")} aria-label={t.nav.home} data-team-on={team || undefined}>
+          <Logo className={s.full} team={teamVariant} />
+          <Logo variant="mark" className={s.short} team={teamVariant} />
         </Link>
         <div className={s.right}>
           <nav className={s.nav} aria-label={t.nav.label}>
