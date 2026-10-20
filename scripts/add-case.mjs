@@ -24,6 +24,8 @@ const browser = await chromium.launch(
 // Три экрана: начало страницы и два места дальше по странице (начала секций, если они есть)
 async function shoot(kind, viewport, scale) {
   const page = await browser.newPage({ viewport, deviceScaleFactor: scale });
+  // CASE_STORAGE='{"ключ":"значение"}' — записать в localStorage до загрузки (например, чтобы не показывать интро)
+  if (process.env.CASE_STORAGE) await page.addInitScript((s) => Object.entries(JSON.parse(s)).forEach(([k, v]) => localStorage.setItem(k, v)), process.env.CASE_STORAGE);
   await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
   // без полосы прокрутки: иначе справа на снимке остаётся пустая полоса
   await page.addStyleTag({ content: "html { scrollbar-width: none; scrollbar-gutter: auto !important; } ::-webkit-scrollbar { display: none; }" });
