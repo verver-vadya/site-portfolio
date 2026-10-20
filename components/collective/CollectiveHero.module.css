@@ -98,7 +98,16 @@
   }
 }
 
+/* на телефоне экран узкий и высокий: заголовок сразу под шапкой, без пустоты сверху,
+   блок высотой по содержимому, искры остаются под текстом и ниже */
 @media (max-width: 720px) {
+  .hero {
+    min-height: 0;
+    align-items: flex-start;
+  }
+  .in {
+    padding-block: var(--s-8) var(--s-16);
+  }
   .lede {
     justify-self: start;
     font-size: var(--fs-sm);
