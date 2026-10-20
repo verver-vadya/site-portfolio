@@ -5,6 +5,7 @@ export const metadata = pageMeta({
   title: "Объединение · verver",
   description: "Команда под проект: дизайн, 3D и анимация, разработка, фото и тексты. Один договор и один ответственный.",
   path: "/collective/",
+  image: "og-collective.jpg",
 });
 
 export default function CollectivePage() {
