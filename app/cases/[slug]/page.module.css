@@ -17,6 +17,12 @@
   object-fit: cover;
   object-position: 50% 0%;
 }
+/* рамка скриншота: её сдвигает и приближает прокрутка (components/case/CaseMotion.tsx) */
+.frame {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
 .scrim {
   position: absolute;
   inset: auto 0 0 0;
@@ -369,5 +375,35 @@
     .next:hover .nextShot {
       transform: none;
     }
+  }
+}
+
+/* Движение на GSAP (components/case/CaseMotion.tsx). Пока скрипт не запустился, то, что потом
+   появляется, уже спрятано, чтобы не мигнуло; reveal-all показывает всё, если скрипты не пришли. */
+:global(html.js:not(.reveal-all)) .hero:not(:global(.is-in)) :is([data-g-hero], [data-g-title]),
+:global(html.js:not(.reveal-all)) .content:not(:global(.is-in)) :is([data-g-lines], [data-g-block], [data-g-each] > *, [data-g-phones] > *) {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  :global(html.js:not(.reveal-all)) .hero:not(:global(.is-in)) [data-g-hero-pic] {
+    transform: scale(1.1);
+  }
+}
+/* строки названия и описания выезжают из-под края: запас сверху и снизу, чтобы не срезало
+   надстрочные знаки (Й) и хвосты букв */
+.title :global(.g-line-mask),
+.summary :global(.g-line-mask) {
+  padding-block: 0.12em 0.08em;
+  margin-block: -0.12em -0.08em;
+}
+@media print {
+  .hero [data-g-hero],
+  .hero [data-g-title],
+  .content [data-g-lines],
+  .content [data-g-block],
+  .content [data-g-each] > *,
+  .content [data-g-phones] > * {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
