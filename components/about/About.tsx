@@ -47,7 +47,7 @@ export function About({ lang }: { lang: Lang }) {
   const me = ownerIn(lang);
   return (
     <section className={`${s.about} wrap`} aria-labelledby="about-title">
-      <h1 id="about-title" className={s.title}>
+      <h1 id="about-title" className={s.title} data-g-rise="">
         {t.title}
       </h1>
       <div className={s.grid}>

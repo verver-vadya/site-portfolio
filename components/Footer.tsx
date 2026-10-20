@@ -4,16 +4,20 @@ import { usePathname } from "next/navigation";
 import { dict } from "@/lib/dict";
 import { href, langOf } from "@/lib/i18n";
 import { owner, ownerIn } from "@/lib/site";
+import { FooterMarquee } from "./FooterMarquee";
 import { ThemeSwitch } from "./ThemeSwitch";
 import s from "./Footer.module.css";
 
 export function Footer() {
-  const lang = langOf(usePathname());
+  const pathname = usePathname();
+  const lang = langOf(pathname);
   const t = dict[lang];
   const me = ownerIn(lang);
   const year = new Date().getFullYear();
   return (
     <footer className={s.footer}>
+      {/* на странице заявки строка вела бы на саму себя */}
+      {!/\/contact\/?$/.test(pathname) && <FooterMarquee text={t.footer.marquee} to={href(lang, "/contact/")} />}
       <div className={`${s.in} wrap caps muted`}>
         <span>© verver, {year}</span>
         <span>

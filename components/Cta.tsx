@@ -12,7 +12,7 @@ export function Cta({ links = [], lang }: { links?: { label: string; to: string 
         {t.eyebrow}
       </p>
       <div className={s.body}>
-        <h2 id="cta-title" className={s.title} data-reveal>
+        <h2 id="cta-title" className={s.title} data-g-rise="">
           {t.title}
         </h2>
         <div className={s.row} data-reveal style={{ "--reveal-i": 1 } as React.CSSProperties}>

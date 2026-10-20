@@ -13,7 +13,7 @@ const ru = {
     menu: "Меню",
   },
   lang: { label: "Язык сайта", other: "EN", otherFull: "English" },
-  footer: { privacy: "Политика конфиденциальности", inn: "ИНН" },
+  footer: { privacy: "Политика конфиденциальности", inn: "ИНН", marquee: "Обсудим ваш проект" },
   theme: { label: "Тема сайта", title: "Тема:", dark: "Тёмная", light: "Светлая", system: "Как в системе" },
   cta: {
     eyebrow: "Дальше",
@@ -34,6 +34,7 @@ const ru = {
     label: "Работы на кольце",
     mouse: "Тяните кольцо, чтобы покрутить, нажмите на экран, чтобы открыть",
     touch: "Листайте кольцо пальцем, нажмите на экран, чтобы открыть",
+    rise: "Листайте вниз, работы всплывут по очереди. Нажмите, чтобы открыть",
     work: (i: number, title: string) => `Работа ${i}: ${title}`,
     of: (i: number, n: number) => `Работа ${i} из ${n}`,
     prev: "Предыдущая работа",
@@ -73,7 +74,7 @@ const en: Dict = {
     menu: "Menu",
   },
   lang: { label: "Site language", other: "RU", otherFull: "Русский" },
-  footer: { privacy: "Privacy policy", inn: "Tax ID" },
+  footer: { privacy: "Privacy policy", inn: "Tax ID", marquee: "Let’s talk about your project" },
   theme: { label: "Site theme", title: "Theme:", dark: "Dark", light: "Light", system: "System" },
   cta: {
     eyebrow: "Next",
@@ -94,6 +95,7 @@ const en: Dict = {
     label: "Work on the ring",
     mouse: "Drag the ring to spin it, click a screen to open it",
     touch: "Swipe the ring to spin it, tap a screen to open it",
+    rise: "Scroll down, the work surfaces one by one. Tap to open",
     work: (i, title) => `Project ${i}: ${title}`,
     of: (i, n) => `Project ${i} of ${n}`,
     prev: "Previous project",

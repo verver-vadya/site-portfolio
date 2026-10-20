@@ -36,7 +36,8 @@
   text-align: center;
   padding-inline: var(--gutter);
 }
-.touch {
+.touch,
+.rise {
   display: none;
 }
 @media (hover: none) {
@@ -44,6 +45,22 @@
     display: none;
   }
   .touch {
+    display: inline;
+  }
+}
+
+/* Вертикальный экран (телефон): вместо кольца работы по одной всплывают из воды, пока блок
+   листают вниз (components/scene/World.tsx, rise). На каждую работу около 90 % высоты экрана
+   прокрутки, первая и последняя стоят чуть дольше */
+@media (max-aspect-ratio: 4/5) {
+  .stage {
+    height: calc(var(--svh, 1svh) * (100 + 90 * (var(--n, 3) - 0.4)));
+  }
+  .mouse,
+  .touch {
+    display: none;
+  }
+  .rise {
     display: inline;
   }
 }

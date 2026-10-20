@@ -74,11 +74,18 @@ export function Stage({ cases, lang }: { cases: StageCase[]; lang: Lang }) {
   };
 
   return (
-    <section ref={ref} className={s.stage} data-scene-stage aria-label={t.label}>
+    <section
+      ref={ref}
+      className={s.stage}
+      data-scene-stage
+      aria-label={t.label}
+      style={{ "--n": cases.length } as React.CSSProperties}
+    >
       <div className={s.sticky} data-shown={shown ? "" : undefined} data-scene-sticky>
         <p className={`${s.hint} caps muted`}>
           <span className={s.mouse}>{t.mouse}</span>
           <span className={s.touch}>{t.touch}</span>
+          <span className={s.rise}>{t.rise}</span>
         </p>
         <div className={`wrap ${s.caption}`} data-scene-caption>
           <div className={s.info} aria-live={announce ? "polite" : "off"}>

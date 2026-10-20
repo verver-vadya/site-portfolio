@@ -98,7 +98,7 @@ export function PrivacyView({ lang }: { lang: Lang }) {
       <header className={s.head}>
         <p className="caps muted">{t.date}</p>
         {/* «конфиденциальности» — длинное слово: на узком телефоне переносится по слогу */}
-        <h1 className={s.title}>{t.title}</h1>
+        <h1 className={s.title} data-g-rise="">{t.title}</h1>
       </header>
 
       <div className={s.list}>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Shot } from "@/components/Shot";
 import { Cta } from "@/components/Cta";
+import { CaseMotion } from "@/components/case/CaseMotion";
 import { getCases } from "@/lib/cases";
 import { dict } from "@/lib/dict";
 import { href, type Lang } from "@/lib/i18n";
@@ -54,14 +55,13 @@ export function CaseView({ slug, lang }: { slug: string; lang: Lang }) {
   const next = cases[(i + 1) % cases.length];
   const u = new URL(c.url);
   const host = u.host + u.pathname.replace(/\/$/, "");
-  const reveal = (n: number) => ({ "--reveal-i": n }) as React.CSSProperties;
 
   return (
-    <>
+    <CaseMotion>
       {/* Первый экран: сюда раскрывается панель кольца из 3D-сцены, размеры и кадр картинки не менять */}
       <section className={s.hero} data-case-hero={c.slug}>
         {/* на вертикальном экране первый экран с телефона: им же заканчивается раскрытие панели кольца */}
-        <picture>
+        <picture className={s.frame} data-g-hero-frame="">
           <source
             media="(max-aspect-ratio: 4/5)"
             srcSet={c.phone[0].srcSet}
@@ -76,24 +76,25 @@ export function CaseView({ slug, lang }: { slug: string; lang: Lang }) {
             sizes="100vw"
             priority
             data-case-hero-img=""
+            data-g-hero-pic=""
           />
         </picture>
         <div className={s.scrim} aria-hidden="true" />
-        <div className={s.heroText} data-case-hero-text="" data-overlap-ok="">
+        <div className={s.heroText} data-case-hero-text="" data-overlap-ok="" data-g-hero-text="">
           <div className={`wrap ${s.heroIn}`}>
-            <Link className={`${s.back} caps link`} href={href(lang, "/works/")}>
+            <Link className={`${s.back} caps link`} href={href(lang, "/works/")} data-g-hero="">
               {t.allWorks}
             </Link>
             <div className={s.heroMain}>
-              <h1 className={s.title}>{c.title}</h1>
-              <p className={s.heroMeta}>
+              <h1 className={s.title} data-g-title="">{c.title}</h1>
+              <p className={s.heroMeta} data-g-hero="">
                 <span>
                   {c.niche} · {c.city} · {c.year}
                 </span>
                 <span className="tag caps">{d.status[c.status]}</span>
               </p>
             </div>
-            <div className={s.actions}>
+            <div className={s.actions} data-g-hero="">
               {c.live ? (
                 <a className={`btn ${s.open}`} href={c.url} target="_blank" rel="noopener">
                   {t.openSite}
@@ -106,13 +107,13 @@ export function CaseView({ slug, lang }: { slug: string; lang: Lang }) {
         </div>
       </section>
 
-      <div className={s.content}>
+      <div className={s.content} data-case-body="">
         <article className={`wrap ${s.body}`}>
           <div className={s.intro}>
-            <p className={s.summary} data-reveal>
+            <p className={s.summary} data-g-lines="">
               {c.summary}
             </p>
-            <dl className={s.facts} data-reveal style={reveal(1)}>
+            <dl className={s.facts} data-g-each="">
               <div>
                 <dt className="caps muted">{t.niche}</dt>
                 <dd>{c.niche}</dd>
@@ -150,20 +151,21 @@ export function CaseView({ slug, lang }: { slug: string; lang: Lang }) {
             </dl>
           </div>
 
-          <div className={s.prose} data-reveal dangerouslySetInnerHTML={{ __html: c.html }} />
+          <div className={s.prose} data-g-each="" dangerouslySetInnerHTML={{ __html: c.html }} />
 
           {c.desktop.slice(1).map((im, n) => (
-            <figure key={im.id} className={s.plate} data-reveal>
+            <figure key={im.id} className={s.plate} data-g-block="">
               <Shot
                 className={s.wide}
                 img={im}
                 alt={t.altDesktop(c.title, n + 2)}
+                data-g-zoom=""
                 sizes="(max-width: 720px) 86vw, min(88vw, 1900px)"
               />
             </figure>
           ))}
 
-          <ul className={`${s.plate} ${s.phones}`} data-reveal>
+          <ul className={`${s.plate} ${s.phones}`} data-g-phones="">
             {c.phone.map((im, n) => (
               <li key={im.id} className={s.phone}>
                 <Shot
@@ -176,7 +178,7 @@ export function CaseView({ slug, lang }: { slug: string; lang: Lang }) {
           </ul>
 
           {next.slug !== c.slug && (
-            <Link className={s.next} href={href(lang, `/cases/${next.slug}/`)} data-cursor="open" data-reveal>
+            <Link className={s.next} href={href(lang, `/cases/${next.slug}/`)} data-cursor="open" data-g-block="">
               <span className={s.nextText}>
                 <span className="caps muted">{t.next}</span>
                 <span className={s.nextTitle}>{next.title}&nbsp;→</span>
@@ -204,6 +206,6 @@ export function CaseView({ slug, lang }: { slug: string; lang: Lang }) {
           ]}
         />
       </div>
-    </>
+    </CaseMotion>
   );
 }

@@ -18,7 +18,7 @@ export default function Scene({ cases, home, navigate, host, onReady }: ScenePro
   const [busy, setBusy] = useState(false); // панель раскрывается в страницу кейса
   const [covered, setCovered] = useState(false); // список работ ниже закрыл сцену целиком
   const [hidden, setHidden] = useState(false);
-  // вертикальный экран (телефон): кольцо из скриншотов с телефона
+  // вертикальный экран (телефон): вместо кольца карточки из скриншотов с телефона всплывают по одной
   const [portrait, setPortrait] = useState(() => innerWidth / innerHeight < 0.8);
 
   useEffect(() => {
@@ -91,6 +91,7 @@ export default function Scene({ cases, home, navigate, host, onReady }: ScenePro
         host={host}
         onReady={onReady}
         setBusy={setBusy}
+        rise={portrait}
       />
     </Canvas>
   );
