@@ -10,11 +10,12 @@ import { Logo } from "./Logo";
 import { MobileMenuLazy } from "./MobileMenuLazy";
 import s from "./Header.module.css";
 
-type Section = { to: string; key: "works" | "prices" | "about" | "contact"; also?: string; narrow?: boolean };
+type Section = { to: string; key: "works" | "prices" | "about" | "collective" | "contact"; also?: string; narrow?: boolean };
 const sections: Section[] = [
   { to: "/works/", key: "works", also: "/cases/" },
   { to: "/prices/", key: "prices" },
   { to: "/about/", key: "about", narrow: true },
+  { to: "/collective/", key: "collective" },
   { to: "/contact/", key: "contact" },
 ];
 

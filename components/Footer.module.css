@@ -18,6 +18,13 @@
   min-height: 24px;
 }
 
+/* Telegram и канал рядом */
+.tg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--s-4);
+}
+
 /* переключатель темы: просто слова, выбранное — основным цветом и подчёркнуто */
 .theme {
   display: flex;

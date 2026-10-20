@@ -15,6 +15,7 @@ const ru = {
   checkbox: "Отметьте этот пункт",
   choice: "Выберите один из вариантов",
   contact: "Напишите ник в Telegram (например, @name), телефон из 10 цифр после +7 или почту",
+  url: "Нужна ссылка, например behance.net/name или ваш-сайт.ru",
   tooShort: (n: number) => `Нужно хотя бы ${n} ${plural(n, ["символ", "символа", "символов"])}`,
   invalidSummary: "Проверьте выделенные поля",
   sending: "Отправляю…",
@@ -31,6 +32,7 @@ const en: typeof ru = {
   checkbox: "Please tick this box",
   choice: "Please choose one of the options",
   contact: "Enter a Telegram handle (for example, @name), a phone number with country code or an email",
+  url: "Please paste a link, for example behance.net/name or yoursite.com",
   tooShort: (n: number) => `At least ${n} ${n === 1 ? "character" : "characters"}, please`,
   invalidSummary: "Please check the highlighted fields",
   sending: "Sending…",
@@ -64,6 +66,11 @@ export function isContact(value: string, anyPhone = false) {
   return phoneDigits(value).length === 10;
 }
 
+// Ссылка без пробелов с доменом: behance.net/name, https://site.ru, t.me/name
+export function isLink(value: string) {
+  return /^(https?:\/\/)?[^\s/]+\.[^\s/]{2,}(\/\S*)?$/i.test(value);
+}
+
 // Пустая строка — поле в порядке. У группы переключателей проверяется вся группа.
 export function validateField(input: Field, form: HTMLFormElement, TEXT: Text = ru) {
   if (input instanceof HTMLInputElement && input.type === "radio") {
@@ -78,6 +85,7 @@ export function validateField(input: Field, form: HTMLFormElement, TEXT: Text = 
   if (input.required && value === "") return input.dataset.errorRequired || TEXT.required;
   if (value === "") return "";
   if (input.dataset.validate === "contact" && !isContact(value, TEXT !== ru)) return TEXT.contact;
+  if (input.dataset.validate === "url" && !isLink(value)) return TEXT.url;
   if ("minLength" in input && input.minLength > 0 && value.length < input.minLength) return TEXT.tooShort(input.minLength);
   return "";
 }

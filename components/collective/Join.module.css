@@ -1,0 +1,162 @@
+/* Раздел «Ищем в объединение»: заголовок со счётчиком, карточки открытых ролей, форма */
+.join {
+  display: grid;
+  gap: var(--s-16);
+  padding-block: var(--s-24);
+  border-top: 1px solid var(--c-line);
+  scroll-margin-top: var(--header-h);
+}
+
+.pill {
+  composes: pill from "./CollectiveHero.module.css";
+}
+
+.head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: var(--s-6) var(--s-12);
+}
+.head .pill,
+.title {
+  grid-column: 1 / -1;
+}
+.title {
+  font-size: clamp(2.5rem, 1rem + 6vw, 7.5rem);
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: -0.015em;
+}
+.count {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-4);
+}
+.num {
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 2rem + 6vw, 8rem);
+  font-weight: 700;
+  line-height: 1;
+}
+.side {
+  display: grid;
+  gap: var(--s-4);
+  max-width: 44ch;
+  font-size: var(--fs-md);
+}
+/* личный Telegram и канал */
+.direct {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--s-6);
+}
+.direct span {
+  flex-basis: 100%;
+}
+.direct a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.roles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-3);
+}
+.role {
+  display: grid;
+  align-content: space-between;
+  gap: var(--s-12);
+  padding: var(--s-6);
+  background: var(--c-plate);
+  border-radius: calc(var(--radius-plate) * 3);
+}
+.roleTop {
+  display: grid;
+  gap: var(--s-3);
+}
+.roleName {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  line-height: var(--lh-head);
+}
+.roleBottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--c-line);
+}
+/* «Откликнуться»: маленькая инверсная таблетка */
+.apply {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding-inline: var(--s-4);
+  color: var(--c-paper);
+  background: var(--c-ink);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition: transform var(--d-fast) var(--ease-out), opacity var(--d-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .apply:hover {
+    opacity: 0.85;
+  }
+}
+.apply:active {
+  transform: scale(0.97);
+}
+
+.formBox {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--s-8) var(--s-12);
+  align-items: start;
+  scroll-margin-top: var(--header-h);
+}
+.formHead {
+  display: grid;
+  gap: var(--s-4);
+  position: sticky;
+  top: calc(var(--header-h) + var(--s-6));
+}
+.formTitle {
+  font-size: var(--fs-xl);
+}
+
+@media (max-width: 1023px) {
+  .roles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .formBox {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .formHead {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .join {
+    gap: var(--s-12);
+    padding-block: var(--s-16);
+  }
+  .head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .side {
+    font-size: var(--fs-sm);
+  }
+  .roles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .role {
+    gap: var(--s-6);
+  }
+}

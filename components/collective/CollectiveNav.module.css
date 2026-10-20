@@ -1,0 +1,112 @@
+/* Панель-«таблетка» внизу экрана: сегменты, последний инверсный */
+.nav {
+  position: fixed;
+  z-index: 40;
+  inset-inline: 0;
+  bottom: calc(var(--s-4) + env(safe-area-inset-bottom));
+  width: max-content;
+  max-width: calc(100% - 2 * var(--gutter));
+  margin-inline: auto;
+  display: flex;
+  gap: var(--s-1);
+  padding: var(--s-1);
+  background: var(--c-plate);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 12px 32px -16px rgb(0 0 0 / 0.5);
+}
+.item {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: var(--s-4);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background-color var(--d-fast) var(--ease-out),
+    color var(--d-fast) var(--ease-out),
+    transform var(--d-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .item:not(.inverse):hover {
+    background: var(--c-hover);
+  }
+}
+.item[aria-current]:not(.inverse) {
+  background: color-mix(in srgb, var(--c-ink) 12%, transparent);
+}
+.item:active {
+  transform: scale(0.97);
+}
+.inverse {
+  color: var(--c-paper);
+  background: var(--c-ink);
+}
+@media (hover: hover) {
+  .inverse:hover {
+    background: var(--c-press);
+  }
+}
+
+/* Ярлык на правом краю, текст снизу вверх. Только на широком экране */
+.tab {
+  position: fixed;
+  z-index: 40;
+  right: 0;
+  top: 50%;
+  padding: var(--s-4) var(--s-2);
+  writing-mode: vertical-rl;
+  text-decoration: none;
+  transform: translateY(-50%) rotate(180deg);
+  background: var(--c-ink);
+  color: var(--c-paper);
+  border-radius: 0 var(--radius-plate) var(--radius-plate) 0;
+}
+@media (max-width: 1023px) {
+  .tab {
+    display: none;
+  }
+}
+
+/* появление и уход: только opacity и transform */
+.nav,
+.tab {
+  transition:
+    opacity var(--d-open) var(--ease-soft),
+    translate var(--d-open) var(--ease-soft);
+}
+.nav:not([data-shown]) {
+  opacity: 0;
+  translate: 0 calc(100% + var(--s-6));
+  pointer-events: none;
+  transition-timing-function: var(--ease-close);
+  transition-duration: var(--d-close);
+}
+.tab:not([data-shown]) {
+  opacity: 0;
+  translate: 100% 0;
+  pointer-events: none;
+  transition-timing-function: var(--ease-close);
+  transition-duration: var(--d-close);
+}
+
+@media (max-width: 420px) {
+  .item {
+    padding-inline: var(--s-3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav:not([data-shown]),
+  .tab:not([data-shown]) {
+    translate: none;
+  }
+}
+
+@media print {
+  .nav,
+  .tab {
+    display: none;
+  }
+}
