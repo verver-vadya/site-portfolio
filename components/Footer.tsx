@@ -23,6 +23,14 @@ export function Footer() {
         <span>
           {me.fullName}, {me.status}, {t.footer.inn} {owner.inn}
         </span>
+        <span className={s.tg}>
+          <a className={`link ${s.link}`} href={`https://t.me/${owner.telegram}`} target="_blank" rel="noopener">
+            Telegram
+          </a>
+          <a className={`link ${s.link}`} href={`https://t.me/${owner.channel}`} target="_blank" rel="noopener">
+            {t.footer.channel}
+          </a>
+        </span>
         <ThemeSwitch t={t.theme} />
         <Link className={`link ${s.link}`} href={href(lang, "/privacy/")}>
           {t.footer.privacy}

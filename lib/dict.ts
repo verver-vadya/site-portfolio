@@ -13,7 +13,7 @@ const ru = {
     menu: "Меню",
   },
   lang: { label: "Язык сайта", other: "EN", otherFull: "English" },
-  footer: { privacy: "Политика конфиденциальности", inn: "ИНН", marquee: "Обсудим ваш проект" },
+  footer: { privacy: "Политика конфиденциальности", inn: "ИНН", marquee: "Обсудим ваш проект", channel: "Канал в Telegram" },
   theme: { label: "Тема сайта", title: "Тема:", dark: "Тёмная", light: "Светлая", system: "Как в системе" },
   cta: {
     eyebrow: "Дальше",
@@ -74,7 +74,7 @@ const en: Dict = {
     menu: "Menu",
   },
   lang: { label: "Site language", other: "RU", otherFull: "Русский" },
-  footer: { privacy: "Privacy policy", inn: "Tax ID", marquee: "Let’s talk about your project" },
+  footer: { privacy: "Privacy policy", inn: "Tax ID", marquee: "Let’s talk about your project", channel: "Telegram channel" },
   theme: { label: "Site theme", title: "Theme:", dark: "Dark", light: "Light", system: "System" },
   cta: {
     eyebrow: "Next",

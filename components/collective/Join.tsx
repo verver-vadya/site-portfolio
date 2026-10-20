@@ -1,4 +1,6 @@
+import { dict } from "@/lib/dict";
 import type { Lang } from "@/lib/i18n";
+import { owner } from "@/lib/site";
 import { JoinForm } from "./JoinForm";
 import { openRoles, roles } from "./roles";
 import s from "./Join.module.css";
@@ -16,6 +18,7 @@ const text = {
     title: "Ищу сильных людей в команду",
     lede: "Зову в проекты, когда нужна ваша часть работы. Работаем удалённо, оплата за каждый проект, договор со мной.",
     count: (n: number) => pluralRu(n, ["открытая роль", "открытые роли", "открытых ролей"]),
+    direct: "Спросить напрямую",
     format: "Удалённо · оплата за проект",
     apply: "Откликнуться",
     formTitle: "Хочу в\u00a0объединение",
@@ -26,6 +29,7 @@ const text = {
     title: "Looking for strong people",
     lede: "I bring people into projects when their part of the work is needed. Remote work, paid per project, with a contract with me.",
     count: (n: number) => (n === 1 ? "open role" : "open roles"),
+    direct: "Ask directly",
     format: "Remote · paid per project",
     apply: "Apply",
     formTitle: "I want to join",
@@ -49,9 +53,18 @@ export function Join({ lang }: { lang: Lang }) {
           <span className={s.num}>{open.length}</span>
           <span className="caps muted">{t.count(open.length)}</span>
         </p>
-        <p className={`${s.lede} muted`} data-reveal>
-          {t.lede}
-        </p>
+        <div className={s.side} data-reveal>
+          <p className="muted">{t.lede}</p>
+          <p className={s.direct}>
+            <span className="caps muted">{t.direct}</span>
+            <a className="link" href={`https://t.me/${owner.telegram}`} target="_blank" rel="noopener">
+              Telegram @{owner.telegram}
+            </a>
+            <a className="link" href={`https://t.me/${owner.channel}`} target="_blank" rel="noopener">
+              {dict[lang].footer.channel} @{owner.channel}
+            </a>
+          </p>
+        </div>
       </div>
 
       <ul className={s.roles} data-g-cards="">

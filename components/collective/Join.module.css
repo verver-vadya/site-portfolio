@@ -38,9 +38,26 @@
   font-weight: 700;
   line-height: 1;
 }
-.lede {
+.side {
+  display: grid;
+  gap: var(--s-4);
   max-width: 44ch;
   font-size: var(--fs-md);
+}
+/* личный Telegram и канал */
+.direct {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--s-6);
+}
+.direct span {
+  flex-basis: 100%;
+}
+.direct a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .roles {
@@ -133,7 +150,7 @@
   .head {
     grid-template-columns: minmax(0, 1fr);
   }
-  .lede {
+  .side {
     font-size: var(--fs-sm);
   }
   .roles {

@@ -74,6 +74,9 @@ export function About({ lang }: { lang: Lang }) {
               <a className="link" href={`https://t.me/${owner.telegram}`} target="_blank" rel="noopener">
                 Telegram @{owner.telegram}
               </a>
+              <a className="link" href={`https://t.me/${owner.channel}`} target="_blank" rel="noopener">
+                {dict[lang].footer.channel} @{owner.channel}
+              </a>
               <a className="link" href={`mailto:${owner.email}`}>
                 {owner.email}
               </a>
