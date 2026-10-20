@@ -3,6 +3,8 @@
 // При прокрутке буквы по одной уходят под воду, а из воды поднимается кольцо со скриншотами работ.
 // Кольцо крутится пальцем или мышью, панель под курсором выдвигается, по клику панель
 // разворачивается в первый экран страницы кейса, и сцена передаёт его настоящей странице.
+// На вертикальном экране (телефон) кольца нет: работы по одной всплывают из воды крупными
+// карточками, пока страницу листают вниз, и уходят вверх, уступая место следующей (rise).
 //
 // Кадр рисуется в три прохода: отражение (мир перевёрнут под воду), подводная часть и основной кадр.
 import { useFrame, useThree } from "@react-three/fiber";
@@ -31,10 +33,26 @@ const RING_FOV = 72; // объектив у кольца, как в DialKit
 const RING_TAN = Math.tan(((RING_FOV / 2) * Math.PI) / 180);
 const HP = 2; // высота панели кольца
 const LIFT = 0.28; // зазор между водой и низом панели
+// карточки на телефоне: часть очень большого цилиндра, то есть почти плоские; своя камера
+const CARD_R = 60;
+const CARD_FOV = 40;
+const CARD_TAN = Math.tan(((CARD_FOV / 2) * Math.PI) / 180);
+const CARD_TALL = 0.46; // карточка занимает чуть меньше половины высоты экрана
+const BELOW = -(HP + 0.15); // низ карточки, пока она под водой
 const WORD_H = 604; // высота надписи в единицах шрифта (с выносом ниже строки)
 const WORD_ASC = 588;
 
 const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+// Карточки на телефоне. Пока блок с работами стоит на экране, его прокрутка q (0..1) переводится
+// в номер работы на воде f (0..n-1); первая и последняя стоят чуть дольше (RISE_E)
+const RISE_E = 0.3;
+const RISE_HOLD = 0.12; // около целого f карточка стоит на воде
+// между соседними работами: текущая уходит вверх на отрезке LEAVE, следующая всплывает на отрезке UP
+// (доли пути от одной работы к другой; всплывать начинает, пока предыдущая ещё уходит)
+const LEAVE = [RISE_HOLD, 0.62] as const;
+const UP = [0.2, 1 - RISE_HOLD] as const;
+const riseF = (q: number, n: number) => clamp(q * (n - 1 + 2 * RISE_E) - RISE_E, 0, Math.max(0, n - 1));
+const riseQ = (f: number, n: number) => (f + RISE_E) / (n - 1 + 2 * RISE_E);
 const smooth = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 
@@ -48,6 +66,7 @@ type Panel = {
   hover: number;
   large?: THREE.Texture;
   loadingLarge?: boolean;
+  prevLift?: number; // карточка на телефоне: высота в прошлом кадре (для кругов на воде)
 };
 
 type Props = {
@@ -57,6 +76,7 @@ type Props = {
   host: HTMLElement;
   onReady: () => void;
   setBusy: (busy: boolean) => void;
+  rise: boolean; // вертикальный экран: карточки всплывают по одной вместо кольца
 };
 
 function readColors() {
@@ -69,7 +89,7 @@ function readColors() {
   };
 }
 
-export function World({ cases, home, navigate, host, onReady, setBusy }: Props) {
+export function World({ cases, home, navigate, host, onReady, setBusy, rise }: Props) {
   const gl = useThree((s) => s.gl);
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
@@ -96,16 +116,17 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     });
 
     // кольцо: по 3 экрана с каждой работы вперемешку, не меньше 18 панелей — широкая лента, как в DialKit
+    // На телефоне — по одной карточке на работу (первый экран), все в одном месте перед камерой
     const order: { caseIndex: number; shotIndex: number }[] = [];
-    const perCase = Math.max(1, Math.min(3, ...cases.map((c) => c.shots.length)));
+    const perCase = rise ? 1 : Math.max(1, Math.min(3, ...cases.map((c) => c.shots.length)));
     for (let s = 0; s < perCase; s++) cases.forEach((_, ci) => order.push({ caseIndex: ci, shotIndex: s }));
-    while (order.length < 18) order.push(...order.slice(0, Math.min(order.length, 18 - order.length)));
+    while (!rise && order.length < 18) order.push(...order.slice(0, Math.min(order.length, 18 - order.length)));
     const n = order.length;
-    const step = (Math.PI * 2) / n;
-    // экраны почти вплотную, как в DialKit: одна сплошная лента с тонкими швами
-    const width = step * 0.985;
+    const step = (Math.PI * 2) / Math.max(n, 1);
     const aspect = cases[0]?.shots[0] ? cases[0].shots[0].width / cases[0].shots[0].height : 1.6;
-    const radius = (aspect * HP) / width;
+    // экраны почти вплотную, как в DialKit: одна сплошная лента с тонкими швами
+    const width = rise ? (aspect * HP) / CARD_R : step * 0.985;
+    const radius = rise ? CARD_R : (aspect * HP) / width;
 
     // появление (см. ENTER в materials.ts): длина пути, на которой середина панели встаёт на свою высоту
     const curve = ENTER.curve * (HP / 2);
@@ -140,7 +161,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
         uMap2: { value: null },
         uMix: { value: 0 },
         uHasMap: { value: 0 },
-        uTheta: { value: i * step },
+        uTheta: { value: rise ? 0 : i * step },
         uWidth: { value: width },
         uRadius: { value: radius },
         uHeight: { value: HP },
@@ -157,7 +178,8 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       const mesh = new THREE.Mesh(grid, panelMaterial(shared, u));
       mesh.frustumCulled = false;
       ring.add(mesh);
-      return { caseIndex, slug: c.slug, shot, mesh, u, theta: i * step, hover: 0 };
+      if (rise) u.uLift.value = BELOW;
+      return { caseIndex, slug: c.slug, shot, mesh, u, theta: rise ? 0 : i * step, hover: 0 };
     });
 
     const waterU: WaterUniforms = {
@@ -212,7 +234,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       keepAbove: [new THREE.Plane(new THREE.Vector3(0, 1, 0), 1000)], // в основном кадре не режем ничего
       keepBelow: [new THREE.Plane(new THREE.Vector3(0, -1, 0), 0)],
     };
-  }, [cases]);
+  }, [cases, rise]);
 
   // ---------- изменяемое состояние (без перерисовки React) ----------
   const st = useRef({
@@ -248,6 +270,8 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     spin: 0.9, // доворот кольца при подъёме, сглаженный
     sink: 0, // 0..1: кольцо уходит под воду, когда листают назад к надписи (только до первого подъёма)
     ringOff: 0, // после подъёма: на сколько пикселей кольцо сдвинуто вниз вместе с блоком на странице
+    cardF: 0, // карточки на телефоне: какая работа стоит на воде (дробное — между ними), сглаженно
+    tap: null as null | { id: number; x: number; y: number }, // нажатие на карточку
     wordP: 0, // как глубоко ушла надпись, сглаженно
     enterT: 0, // время появления 0..1, без сглаживания
     enterWant: false,
@@ -333,19 +357,23 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     }
     // камера у кольца: всё кольцо по ширине помещается в кадр (формула DialKit)
     const R = built.ringInfo.radius;
-    const ringDist = R * Math.sqrt(1 + Math.pow(1 / RING_TAN / Math.max(aspect, 0.85) / 0.9, 2));
-    const ringWpp = (2 * (ringDist - R) * RING_TAN) / H;
+    // карточка: половина высоты экрана, но по ширине не больше 78 %
+    const cardD = Math.max(HP / (CARD_TALL * 2 * CARD_TAN), (imgAspect * HP) / (0.78 * 2 * CARD_TAN * aspect));
+    const ringTan = rise ? CARD_TAN : RING_TAN;
+    const ringDist = rise ? R + cardD : R * Math.sqrt(1 + Math.pow(1 / RING_TAN / Math.max(aspect, 0.85) / 0.9, 2));
+    const ringWpp = (2 * (ringDist - R) * ringTan) / H;
     // на вертикальном экране подпись закрывает низ: лента поднимается так, чтобы её низ был
     // в 40 px над подписью, но не выше 40 % высоты (на высоком экране иначе остаётся пустая полоса)
     let ringShift = 0;
     if (aspect < 1) {
-      const max = 0.2 * (ringDist - R) * RING_TAN;
+      const max = 0.2 * (ringDist - R) * ringTan;
       const caption = document.querySelector<HTMLElement>("[data-scene-caption]");
       const sticky = caption?.offsetParent ? caption.closest<HTMLElement>("[data-scene-sticky]") : null;
       if (caption && sticky) {
         const top = caption.getBoundingClientRect().top - sticky.getBoundingClientRect().top;
         const bottom = H / 2 + HP / 2 / ringWpp; // низ передней панели без сдвига, px
-        ringShift = clamp((bottom - (top - 40)) * ringWpp, 0, max);
+        // карточкам на телефоне нужно больше воды под ними: видно, как они всплывают и отражаются
+        ringShift = clamp((bottom - (top - (rise ? 96 : 40))) * ringWpp, 0, rise ? max * 2 : max);
       } else ringShift = prev?.ringShift ?? max;
     }
     st.current.layout = { W, H, D, wpp, camY, scale, left, ringDist, ringWpp, ringShift };
@@ -366,7 +394,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     // сетка ряби: от дальнего края кольца до камеры, клетки квадратные
     const x0 = -Math.max(9, D * TAN * aspect * 1.1);
     const sizeX = -2 * x0;
-    const z0 = -built.ringInfo.radius * 2 - 3;
+    const z0 = rise ? -8 : -built.ringInfo.radius * 2 - 3;
     const sizeZ = D + 1 - z0;
     const res = W < 720 ? 160 : 256;
     const resZ = Math.round((res * sizeZ) / sizeX);
@@ -388,7 +416,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     const rs = Math.max(0.75, Math.min(1, 1.5 / pr));
     built.reflect.setSize(Math.round(W * pr * rs), Math.round(H * pr * rs));
     built.refract.setSize(Math.round(W * pr * 0.5), Math.round(H * pr * 0.5));
-  }, [size, built, camera, gl, home]);
+  }, [size, built, camera, gl, home, rise]);
 
   // ---------- скриншоты на панели ----------
   useEffect(() => {
@@ -582,6 +610,30 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
 
     const waterHit = () => raycaster.ray.intersectPlane(waterPlane, tmp.v);
 
+    // карточка на телефоне под лучом: плоскость карточек и её текущая высота над водой
+    const cardPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const pickCard = () => {
+      const hit = raycaster.ray.intersectPlane(cardPlane, new THREE.Vector3());
+      if (!hit) return -1;
+      const half = (built.ringInfo.aspect * HP) / 2;
+      const y = hit.y - built.ring.position.y;
+      return built.panels.findIndex((p) => Math.abs(hit.x) < half && y > p.u.uLift.value && y < p.u.uLift.value + HP);
+    };
+
+    // кнопки и точки под карточками листают страницу к нужной работе
+    const scrollToCard = (i: number) => {
+      const stage = document.querySelector<HTMLElement>("[data-scene-stage]");
+      const sticky = stage?.querySelector<HTMLElement>("[data-scene-sticky]");
+      if (!stage || !sticky) return;
+      const n = built.panels.length;
+      const top = stage.getBoundingClientRect().top + scrollY;
+      const range = stage.offsetHeight - sticky.offsetHeight;
+      const f = clamp(i, 0, n - 1);
+      const q = n > 1 ? clamp(riseQ(f, n)) : 0;
+      // первая работа: ровно начало блока, чтобы не уезжать обратно к надписи
+      scrollTo({ top: Math.round(top + (f === 0 ? 0 : q * range)), behavior: "smooth" });
+    };
+
     const dropAt = (x: number, z: number, radius: number, strength: number) => {
       const sim = s.sim;
       if (!sim) return;
@@ -626,7 +678,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
         }
       }
       if (!onRing(e)) unhover();
-      else if (ringReady() && e.pointerType === "mouse") {
+      else if (!rise && ringReady() && e.pointerType === "mouse") {
         const i = interactive(e.target) ? -1 : pickPanel();
         if (i !== s.hovered) {
           s.hovered = i;
@@ -641,7 +693,10 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       // второй палец: это не перетаскивание кольца (например, увеличение страницы)
       if (s.drag.active && e.pointerId !== s.drag.id) return onCancel();
       if (e.button !== 0 || interactive(e.target) || !onWater(e) || !setNdc(e)) return;
-      if (ringReady() && onRing(e)) {
+      if (rise) {
+        // карточки не тянут: нажатие без сдвига открывает работу, движение — это прокрутка
+        s.tap = ringReady() && onRing(e) ? { id: e.pointerId, x: e.clientX, y: e.clientY } : null;
+      } else if (ringReady() && onRing(e)) {
         const i = pickPanel();
         const L = s.layout!;
         // за кольцо можно взяться на его высоте; ниже — это вода
@@ -669,6 +724,15 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     };
 
     const onUp = (e: PointerEvent) => {
+      if (rise) {
+        const t = s.tap;
+        s.tap = null;
+        if (!t || t.id !== e.pointerId || Math.hypot(e.clientX - t.x, e.clientY - t.y) > 8) return;
+        if (!setNdc(e) || !ringReady()) return;
+        const i = pickCard();
+        if (i >= 0 && Math.abs(built.panels[i].u.uLift.value - LIFT) < 0.5) startExpand(built.panels[i]);
+        return;
+      }
       if (!s.drag.active || e.pointerId !== s.drag.id) return;
       s.drag.active = false;
       const tap = s.drag.travel < 6 && Math.abs(e.clientY - s.drag.startY) < 6;
@@ -724,6 +788,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     };
 
     function onCancel(e?: PointerEvent) {
+      s.tap = null;
       if (!s.drag.active || (e && e.pointerId !== s.drag.id)) return;
       s.drag.active = false;
       // уже вели кольцо: доводим до работы, к которой тянули, а не отбрасываем назад
@@ -740,6 +805,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     };
 
     const offStep = on("ring-step", ({ dir }) => {
+      if (rise) return scrollToCard(Math.round(s.cardF) + dir);
       const { step } = built.ringInfo;
       s.mode = "spring";
       s.target = Math.round(s.rot / step) * step - dir * step;
@@ -748,6 +814,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
 
     // точки работ под кольцом: доворачиваем к ближайшему экрану выбранной работы
     const offGo = on("ring-go", ({ index }) => {
+      if (rise) return scrollToCard(built.panels.findIndex((p) => p.caseIndex === index));
       let best = Infinity;
       for (const p of built.panels) {
         const a = wrap(p.theta + s.rot);
@@ -794,7 +861,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     };
     // startExpand и loadLarge читают только изменяемое состояние
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [built, camera, raycaster, ndc, waterPlane, tmp, navigate]);
+  }, [built, camera, raycaster, ndc, waterPlane, tmp, navigate, rise]);
 
   // ---------- кадр одной камерой: отражение, подводная часть и основной кадр ----------
   // scissor — какую полосу холста рисовать (x, y от низа, ширина, высота), null — весь холст.
@@ -806,15 +873,17 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     const prevClip = gl.clippingPlanes;
 
     // 1. отражение: мир перевёрнут под воду, остаётся только то, что было над водой.
-    // Кольцо в воде не отражается и под водой не видно: у кольца вода лишняя
+    // Кольцо в воде не отражается и под водой не видно: у кольца вода лишняя.
+    // Карточки на телефоне, наоборот, всплывают из воды и отражаются (кроме раскрытия в кейс)
     const ringOn = built.ring.visible;
-    built.ring.visible = false;
+    const cardsInWater = rise && ringOn && !s.expand;
+    built.ring.visible = cardsInWater;
     built.water.visible = false;
     built.fade.visible = false;
     // Когда надпись ушла под воду, в отражении и под водой остаётся только небо: пока камера,
     // цвета и размер кадра те же, эти два прохода дают ту же картинку, и их можно не рисовать
     cam.updateMatrixWorld();
-    const passKey = built.wordGroup.visible || !reuseOk
+    const passKey = built.wordGroup.visible || cardsInWater || !reuseOk
       ? ""
       : [
           cam.matrixWorld.elements.join(),
@@ -917,8 +986,9 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       if (s.sink >= 1) s.enterT = 0;
     }
     s.rise = 1 - Math.pow(1 - s.enterT, 5.65);
-    built.enterU.uEnter.value = s.rise;
-    built.enterU.uEnterLin.value = s.enterT;
+    // карточки на телефоне всплывают сами (см. ниже), лента кольца им не нужна: всегда в конце
+    built.enterU.uEnter.value = rise ? 1 : s.rise;
+    built.enterU.uEnterLin.value = rise ? 1 : s.enterT;
     const sk = s.sink * s.sink * (3 - 2 * s.sink);
     built.ring.position.set(0, -sk * (LIFT + HP + 0.3), -built.ringInfo.radius);
     built.ring.visible = s.rise > 0.001 && s.sink < 1 && s.ringOff < L.H;
@@ -964,7 +1034,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
       s.rot += s.vel * dt;
       // само не крутится, пока на кольце курсор или фокус с клавиатуры (кнопки подписи)
       const focused = !!document.activeElement?.closest("[data-scene-stage]");
-      const idle = s.time - s.lastInput > 7 && s.hovered < 0 && !focused && !s.expand && s.rise > 0.97 && s.ringOff < 1;
+      const idle = !rise && s.time - s.lastInput > 7 && s.hovered < 0 && !focused && !s.expand && s.rise > 0.97 && s.ringOff < 1;
       if (idle && s.time > s.autoAt) {
         s.target = Math.round(s.rot / step) * step - step;
         s.autoAt = s.time + tune.autoStep;
@@ -988,7 +1058,48 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     // при вращении экраны не размываются и не гнутся
     const blur = 0;
 
+    if (rise) {
+      // Карточки на телефоне. Прокрутка блока с работами → какая работа стоит на воде (cardF).
+      // Между соседними работами текущая уходит вверх за край экрана, следующая всплывает из воды.
+      // В первый раз, пока «кольцо» поднимается (rise 0..1), первая карточка всплывает по времени.
+      const n = built.panels.length;
+      const sticky = stage?.querySelector<HTMLElement>("[data-scene-sticky]");
+      const range = stage && sticky ? stage.offsetHeight - sticky.offsetHeight : 0;
+      const q = stageTop !== null && range > 0 ? clamp(-stageTop / range) : 0;
+      // пока панель раскрывается в кейс, блока на странице может уже не быть: стоим где были
+      if (stageTop !== null) {
+        const f = riseF(q, n);
+        s.cardF += (f - s.cardF) * (1 - Math.exp(-dt * 7));
+        if (Math.abs(f - s.cardF) < 1e-4) s.cardF = f;
+      }
+      // выше этого низ карточки уже за верхним краем кадра
+      const out = LIFT + HP / 2 - L.ringShift + (L.ringDist - built.ringInfo.radius) * CARD_TAN + 0.3;
+      const half = (built.ringInfo.aspect * HP) / 2;
+      built.panels.forEach((pnl, i) => {
+        const u = s.cardF - i;
+        let y = LIFT;
+        if (u > RISE_HOLD) y = LIFT + smooth(clamp((u - LEAVE[0]) / (LEAVE[1] - LEAVE[0]))) * (out - LIFT);
+        else if (u < -RISE_HOLD) {
+          // под водой карточку не видно: там она идёт быстро, а над водой медленно встаёт на место
+          const k = clamp((u + 1 - UP[0]) / (UP[1] - UP[0]));
+          y = BELOW + (1 - Math.pow(1 - k, 3)) * (LIFT - BELOW);
+        }
+        if (!page) y = BELOW + (y - BELOW) * s.rise;
+        pnl.u.uTheta.value = 0;
+        if (!s.expand || s.expand.panel !== pnl) pnl.u.uLift.value = y;
+        // где карточка пересекает воду, от неё расходятся круги
+        const speed = Math.abs(y - (pnl.prevLift ?? y)) / dt;
+        pnl.prevLift = y;
+        if (s.sim && built.ring.visible && y < 0 && y + HP > 0 && speed > 0.05) {
+          const x = (Math.random() * 2 - 1) * half * 0.9;
+          const r = s.simRect;
+          s.sim.drop((x - r.x) / r.z, (0 - r.y) / r.w, 0.16 / r.z, Math.min(speed * 0.006, 0.012));
+        }
+      });
+    }
+
     built.panels.forEach((pnl, i) => {
+      if (rise) return;
       pnl.u.uTheta.value = pnl.theta + s.rot + spin;
       const want = i === s.hovered && !s.drag.active ? 1 : 0;
       pnl.hover += (want - pnl.hover) * (1 - Math.exp(-dt * 7));
@@ -999,7 +1110,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     });
 
     // какая работа спереди
-    const front = ((Math.round(-(s.rot + spin) / step) % n) + n) % n;
+    const front = rise ? clamp(Math.round(s.cardF), 0, n - 1) : ((Math.round(-(s.rot + spin) / step) % n) + n) % n;
     if (front !== s.front && s.rise > 0.5) {
       s.front = front;
       // запоминаем и в общем состоянии: подпись на главной создаётся заново при каждом возвращении
@@ -1034,7 +1145,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy }: Props) 
     camera.position.lerpVectors(heroPos, ringPos, e);
     tmp.target.lerpVectors(heroTarget, ringTarget, e);
     camera.lookAt(tmp.target);
-    const fov = FOV + (RING_FOV - FOV) * e;
+    const fov = FOV + ((rise ? CARD_FOV : RING_FOV) - FOV) * e;
     const off = page && e === 1 ? s.ringOff : 0;
     const view = camera.view;
     if (Math.abs(camera.fov - fov) > 1e-4 || (view?.enabled ? view.offsetY : 0) !== -off) {
