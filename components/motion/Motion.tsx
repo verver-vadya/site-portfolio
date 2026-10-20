@@ -54,7 +54,7 @@ export function Motion() {
   useEffect(() => {
     if (!matchMedia("(pointer: fine) and (hover: hover)").matches || reduced()) return;
     // allowNestedScroll: колесо над полем «Что ещё важно» и другими прокручиваемыми блоками крутит их, а не страницу
-    const l = new Lenis({ autoRaf: true, lerp: 0.1, stopInertiaOnNavigate: true, allowNestedScroll: true });
+    const l = new Lenis({ autoRaf: true, lerp: 0.1, anchors: true, stopInertiaOnNavigate: true, allowNestedScroll: true });
     lenis.current = l;
     return () => {
       l.destroy();

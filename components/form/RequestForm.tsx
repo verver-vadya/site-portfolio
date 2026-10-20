@@ -1,16 +1,13 @@
 "use client";
 
-// Форма заявки (data-form): проверка ввода на русском и честная отправка в Formspree.
-// «Спасибо» показываем только после ответа сервера; при ошибке данные остаются в полях.
-// Без JS форма уходит обычным POST, а браузер сам проверяет обязательные поля.
+// Форма заявки (data-form). Проверка полей и отправка в Formspree живут в useForm.
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { flushSync } from "react-dom";
+import { useEffect } from "react";
 import { href, type Lang } from "@/lib/i18n";
 import { owner } from "@/lib/site";
 import { SuccessMark } from "./SuccessMark";
-import { TEXTS, TIMEOUT_MS, validateField, type Field } from "./validate";
+import { useForm } from "./useForm";
 import s from "./RequestForm.module.css";
 
 // Подписи формы на двух языках. Названия полей (name) остаются русскими: заявка приходит мне на почту.
@@ -71,126 +68,19 @@ const L = {
 // Порядок проверки = порядок полей; у групп переключателей ключ — id первого варианта
 const KEYS = ["f-name", "f-contact", "f-business", "f-type", "f-when", "f-budget", "f-message", "f-consent"];
 
-type Status = { state: "" | "error" | "success"; message: string };
-
 export function RequestForm({ lang }: { lang: Lang }) {
   const t = L[lang];
-  const TEXT = TEXTS[lang];
-  const formRef = useRef<HTMLFormElement>(null);
-  const statusRef = useRef<HTMLDivElement>(null);
-  const sending = useRef(false);
-  // Пока кнопку отправки нажимают, ошибку при уходе из поля не показываем: она сдвинула бы кнопку
-  // из-под курсора, и нажатие потерялось бы. Поля всё равно проверит отправка.
-  const pressingSubmit = useRef(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const errorsRef = useRef(errors);
-  errorsRef.current = errors;
-  const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<Status>({ state: "", message: "" });
-  const [successCount, setSuccessCount] = useState(0);
+  const { TEXT, formRef, statusRef, busy, status, successCount, leave, recheck, aria, error, submit, onSubmitPress } =
+    useForm(lang, KEYS);
 
   useEffect(() => {
-    const form = formRef.current!;
-    form.noValidate = true; // проверяем сами, с понятными сообщениями
     // «Обсудить» в ценах открывает заявку с ?type=…: сразу отмечаем этот тип сайта
     const picked = new URLSearchParams(location.search).get("type");
     if (picked) {
-      const radio = form.querySelector<HTMLInputElement>(`input[type="radio"][value="${CSS.escape(picked)}"]`);
+      const radio = formRef.current!.querySelector<HTMLInputElement>(`input[type="radio"][value="${CSS.escape(picked)}"]`);
       if (radio) radio.checked = true;
     }
-  }, []);
-
-  const el = (key: string) => formRef.current!.querySelector<Field>(`#${key}`)!;
-  const check = (key: string) => validateField(el(key), formRef.current!, TEXT);
-  const setError = (key: string, message: string) => setErrors((prev) => ({ ...prev, [key]: message }));
-
-  // Ошибку показываем, когда человек ушёл из поля, а убираем сразу, как только он её исправил
-  const leave = (key: string) => () => {
-    if (pressingSubmit.current) return;
-    if (!errorsRef.current[key] && el(key).value.trim() === "") return;
-    setError(key, check(key));
-  };
-  const recheck = (key: string) => () => {
-    if (errorsRef.current[key]) setError(key, check(key));
-  };
-
-  // aria-invalid и описание поля: сначала ошибка, потом подсказка
-  const aria = (key: string, hint?: string) => {
-    const describedBy = [errors[key] && `${key}-error`, hint].filter(Boolean).join(" ");
-    return { "aria-invalid": errors[key] ? true : undefined, "aria-describedby": describedBy || undefined };
-  };
-  const error = (key: string, wide?: boolean) =>
-    errors[key] ? (
-      <p className={`field__error ${wide ? s.errorWide : ""}`} id={`${key}-error`}>
-        {errors[key]}
-      </p>
-    ) : null;
-
-  const showStatus = (next: Status) => {
-    flushSync(() => setStatus(next));
-    const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    statusRef.current?.scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" });
-  };
-
-  async function submit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (sending.current) return; // защита от двойного клика
-    const form = e.currentTarget;
-
-    const next: Record<string, string> = {};
-    let first = "";
-    for (const key of KEYS) {
-      const message = check(key);
-      if (message) {
-        next[key] = message;
-        first ||= key;
-      }
-    }
-    flushSync(() => {
-      setErrors(next);
-      if (first) setStatus({ state: "error", message: TEXT.invalidSummary });
-    });
-    if (first) {
-      el(first).focus();
-      return;
-    }
-
-    if (/YOUR_FORM_ID/.test(form.action)) return showStatus({ state: "error", message: TEXT.notConfigured });
-    if (!navigator.onLine) return showStatus({ state: "error", message: TEXT.offline });
-
-    sending.current = true;
-    flushSync(() => {
-      setBusy(true);
-      setStatus({ state: "", message: "" });
-    });
-    let result: Status;
-    try {
-      const response = await fetch(form.action, {
-        method: "POST",
-        body: new FormData(form),
-        headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      form.reset();
-      setErrors({});
-      setSuccessCount((n) => n + 1);
-      result = { state: "success", message: TEXT.success };
-    } catch (err) {
-      const message =
-        (err as Error).name === "TimeoutError"
-          ? TEXT.timeout
-          : !navigator.onLine
-            ? TEXT.offline
-            : err instanceof TypeError
-              ? TEXT.network
-              : TEXT.server;
-      result = { state: "error", message };
-    }
-    sending.current = false;
-    setBusy(false);
-    showStatus(result);
-  }
+  }, [formRef]);
 
   const choices = (key: string, name: string, list: string[], required = false) =>
     list.map((v, i) => (
@@ -349,10 +239,7 @@ export function RequestForm({ lang }: { lang: Lang }) {
           // не disabled: иначе фокус с кнопки слетает в начало страницы; повторное нажатие ловит sending
           aria-disabled={busy || undefined}
           aria-busy={busy}
-          onPointerDown={() => {
-            pressingSubmit.current = true;
-            document.addEventListener("pointerup", () => setTimeout(() => (pressingSubmit.current = false)), { once: true });
-          }}
+          onPointerDown={onSubmitPress}
         >
           {busy ? TEXT.sending : t.send}
         </button>
