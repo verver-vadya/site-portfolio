@@ -15,19 +15,17 @@ export function Works({ level = 2, lang }: { level?: 1 | 2; lang: Lang }) {
   return (
     <section id="works" className={level === 1 ? `${s.works} ${s.page}` : s.works} data-view="desktop" aria-labelledby="works-title">
       <div className="wrap">
-        <div className={s.head} data-reveal={below || undefined}>
-          <H id="works-title" className={level === 1 ? s.title1 : s.title2}>
+        <div className={s.head}>
+          <H id="works-title" className={level === 1 ? s.title1 : s.title2} data-g-rise="">
             {t.title} <span className={s.count}>({cases.length})</span>
           </H>
-          <ViewSwitch labels={t} />
+          <div data-reveal={below || undefined}>
+            <ViewSwitch labels={t} />
+          </div>
         </div>
-        <ul className={s.grid}>
+        <ul className={s.grid} data-g-cards="">
           {cases.map((c, i) => (
-            <li
-              key={c.slug}
-              data-reveal={below || undefined}
-              style={below ? ({ "--reveal-i": i % 3 } as React.CSSProperties) : undefined}
-            >
+            <li key={c.slug}>
               <CaseCard lang={lang} entry={c} heading={level === 1 ? "h2" : "h3"} priority={level === 1 && i < 2} />
             </li>
           ))}

@@ -44,7 +44,7 @@ export function ContactView({ lang }: { lang: Lang }) {
       <div className={s.top}>
         <BackLink className={s.back} />
       </div>
-      <h1 id="contact-title" className={s.title}>
+      <h1 id="contact-title" className={s.title} data-g-rise="">
         {t.title}
       </h1>
 

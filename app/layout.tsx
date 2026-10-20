@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { SkipLink } from "@/components/SkipLink";
 import { Intro, introScript } from "@/components/motion/Intro";
+import { GsapMotion } from "@/components/motion/GsapMotion";
 import { Motion } from "@/components/motion/Motion";
 import { DialTune } from "@/components/DialTune";
 import { SceneRoot } from "@/components/scene/SceneRoot";
@@ -79,6 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Footer />
         <Intro />
         <Motion />
+        <GsapMotion />
         <DialTune />
       </body>
     </html>

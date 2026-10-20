@@ -1,0 +1,45 @@
+/* Бегущая строка над подвалом (components/FooterMarquee.tsx) */
+.marquee {
+  display: block;
+  overflow: clip;
+  padding-block: var(--s-8);
+  border-bottom: 1px solid var(--c-line);
+  color: var(--c-ink);
+  text-decoration: none;
+  transition: opacity var(--d-fast) var(--ease-out);
+}
+.marquee:active {
+  opacity: 0.7;
+}
+.track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+.half {
+  display: flex;
+}
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding-right: 0.5em;
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+/* ромб из логотипа между повторами */
+.mark {
+  width: 0.28em;
+  height: 0.28em;
+  background: currentColor;
+  transform: rotate(45deg);
+}
+@media (max-width: 720px) {
+  .marquee {
+    padding-block: var(--s-6);
+  }
+}

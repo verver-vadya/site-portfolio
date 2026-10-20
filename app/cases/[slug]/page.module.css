@@ -389,13 +389,6 @@
     transform: scale(1.1);
   }
 }
-/* строки названия и описания выезжают из-под края: запас сверху и снизу, чтобы не срезало
-   надстрочные знаки (Й) и хвосты букв */
-.title :global(.g-line-mask),
-.summary :global(.g-line-mask) {
-  padding-block: 0.12em 0.08em;
-  margin-block: -0.12em -0.08em;
-}
 @media print {
   .hero [data-g-hero],
   .hero [data-g-title],

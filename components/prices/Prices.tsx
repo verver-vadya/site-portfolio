@@ -137,7 +137,7 @@ export function Prices({ lang }: { lang: Lang }) {
   return (
     <section className={`${s.prices} wrap`} aria-labelledby="prices-title">
       <div className={s.head}>
-        <h1 id="prices-title" className={s.title}>
+        <h1 id="prices-title" className={s.title} data-g-rise="">
           {t.title}
         </h1>
         <p className={s.lede}>

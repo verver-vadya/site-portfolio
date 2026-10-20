@@ -405,6 +405,25 @@ html.js:not(.reveal-all) [data-reveal]:not(.is-in) {
   }
 }
 
+/* Движение на GSAP (components/motion/GsapMotion.tsx): заголовки, которые поднимаются строками, и карточки
+   работ спрятаны, пока скрипт не запустился, чтобы не мигнуть; reveal-all показывает всё */
+html.js:not(.reveal-all) [data-g-rise]:not(.is-in),
+html.js:not(.reveal-all) [data-g-cards]:not(.is-in) > * {
+  opacity: 0;
+}
+/* строка выезжает из-под края: запас сверху и снизу, чтобы не срезало надстрочные знаки (Й) и хвосты букв */
+.g-line-mask {
+  padding-block: 0.12em 0.08em;
+  margin-block: -0.12em -0.08em;
+}
+@media print {
+  html.js [data-g-rise],
+  html.js [data-g-cards] > * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 /* первый раздел внутренней страницы: без линии сверху и ближе к шапке */
 #main > section:first-child:not(.hero) {
   border-top: 0;
