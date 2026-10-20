@@ -51,6 +51,7 @@ npm run preview                 # посмотреть сборку: http://loca
 - `components/home/` — первый экран главной (`Hero`: заголовок и надпись verver, она же запасной вариант без 3D) и сцена кольца (`Stage`: подпись работы, кнопки ← → и «Открыть работу»).
 - `components/scene/` — 3D-сцена: `SceneRoot` решает, показывать ли её, и грузит отдельным куском только на главной; `World.tsx` надпись, вода, кольцо, камера и раскрытие панели; `materials.ts` шейдеры; `ripples.ts` круги на воде; `word.ts` буквы из логотипа.
 - `components/motion/` — `Intro` заставка (две «v» сходятся в ромб, один раз за визит), `Motion` плавная прокрутка, ромб-шторка между страницами, курсор-ромб и проявление блоков при прокрутке.
+- `lib/gsap.ts` — GSAP с ScrollTrigger и нашими кривыми (soft, close, hover, quick из setup/motion-examples.md). Импортируй GSAP только отсюда. Шпаргалки GSAP для Claude лежат в `.claude/skills/gsap-*`.
 - `components/works/` — сетка работ, карточка, переключатель «Компьютер / Телефон».
 - `components/prices/`, `components/about/`, `components/form/` — цены и вопросы, «Обо мне» и фото, форма заявки с проверкой полей.
 - `components/Header.tsx`, `Footer.tsx`, `ThemeSwitch.tsx`, `Logo.tsx`, `Cta.tsx` — шапка, подвал, переключатель темы, логотип, «Расскажите о задаче» в конце страниц.
