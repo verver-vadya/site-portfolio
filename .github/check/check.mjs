@@ -663,7 +663,9 @@ async function fillValid(form) {
       continue;
     }
     const name = (await input.getAttribute("name")) || "";
-    const value = (await input.getAttribute("data-validate")) === "contact" ? "@check_anna"
+    const validate = await input.getAttribute("data-validate");
+    const value = validate === "contact" ? "@check_anna"
+      : validate === "url" || type === "url" ? "https://behance.net/check_anna"
       : type === "tel" || /phone/i.test(name) ? "8 (912) 345-67-80"
       : type === "email" ? "check@mail.ru"
       : (await input.evaluate((el) => el.tagName)) === "TEXTAREA" ? "Проверочная заявка"
