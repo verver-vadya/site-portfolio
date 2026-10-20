@@ -1,0 +1,120 @@
+/* Кривые и длительности по setup/motion-examples.md */
+.hero {
+  --ease-reveal: cubic-bezier(0.35, 0, 0.15, 1);
+  position: relative;
+  min-height: calc(calc(var(--svh, 1svh) * 100) - var(--header-h));
+  display: flex;
+  align-items: flex-end;
+  overflow: clip;
+  isolation: isolate;
+}
+
+/* еле заметная сетка квадратов, к краям растворяется */
+.grid {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  --cell: clamp(40px, 4.2vw, 72px);
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--c-ink) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--c-ink) 7%, transparent) 1px, transparent 1px);
+  background-size: var(--cell) var(--cell);
+  background-position: center top;
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 45%, #000 30%, transparent 100%);
+}
+
+.sparks {
+  color: var(--c-ink);
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.in {
+  width: 100%;
+  display: grid;
+  gap: var(--s-6);
+  padding-block: var(--s-12) clamp(var(--s-8), calc(var(--svh, 1svh) * 7), var(--s-16));
+}
+
+/* подпись-«таблетка» над разделом */
+.pill {
+  justify-self: start;
+  padding: var(--s-1) var(--s-3);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 40%, transparent);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+}
+
+/* Строки на всю ширину: самая длинная («дизайнеры», 9 знаков; заглавная Unbounded шириной около
+   0,95 em) ровно занимает ширину между полями. На низком широком экране четыре строки ещё и
+   помещаются по высоте вместе с подписью и абзацем, тогда они уже ширины экрана */
+.title {
+  display: grid;
+  font-size: min(
+    calc((100vw - 2 * var(--gutter)) / 8.9),
+    calc((calc(var(--svh, 1svh) * 100) - var(--header-h) - 15rem) / 4.2),
+    13.5rem
+  );
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+}
+.line {
+  display: block;
+  overflow: clip;
+  /* место над и под буквами (кратка у Й, хвост у Д и Щ), чтобы кромка их не резала */
+  padding-block: 0.14em 0.06em;
+  margin-block: -0.14em -0.06em;
+}
+.line:first-child {
+  justify-self: end;
+}
+.lineIn {
+  display: block;
+  animation: line-in 900ms var(--ease-reveal) both;
+  animation-delay: calc(150ms + var(--i) * 80ms);
+}
+@keyframes line-in {
+  from {
+    transform: translateY(120%);
+  }
+}
+
+.lede {
+  max-width: 44ch;
+  justify-self: end;
+  font-size: var(--fs-md);
+  animation: fade-in 700ms var(--ease-reveal) 600ms both;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@media (max-width: 720px) {
+  .lede {
+    justify-self: start;
+    font-size: var(--fs-sm);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lineIn {
+    animation-name: fade-in-still;
+  }
+  .lede {
+    animation-name: fade-in-still;
+  }
+  @keyframes fade-in-still {
+    from {
+      opacity: 0;
+    }
+  }
+}

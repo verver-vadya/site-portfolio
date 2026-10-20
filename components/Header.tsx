@@ -25,7 +25,7 @@ export function Header() {
   const t = dict[lang];
   const other = lang === "en" ? "ru" : "en";
   // на странице 404 у адреса нет пары на другом языке: ведём на главную
-  const known = /^\/((works|prices|about|contact|privacy)\/?|cases\/[^/]+\/?)?$/.test(path);
+  const known = /^\/((works|prices|about|contact|privacy|collective)\/?|cases\/[^/]+\/?)?$/.test(path);
   const items = sections.map((it) => ({ ...it, label: t.nav[it.key], href: href(lang, it.to) }));
   const ref = useRef<HTMLElement>(null);
 
