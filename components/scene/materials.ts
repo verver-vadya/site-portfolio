@@ -160,7 +160,6 @@ export function panelMaterial(shared: Shared, u: PanelUniforms) {
         float h = uHeight * 0.5;
         // Пока кольцо появляется, каждый экран свёрнут, как бумажный свиток, и раскручивается.
         // Передние экраны раскручиваются раньше задних. В конце всё ровно, как без этого.
-        float lin = clamp(uEnterLin, 0.0, 1.0);
         float roll = 0.0; // по горизонтали не сворачиваем, только по вертикали (см. ниже)
         float W = r * uWidth;
         float sx = (u + 0.5) * W; // от левого края экрана
@@ -174,16 +173,9 @@ export function panelMaterial(shared: Shared, u: PanelUniforms) {
           dTan = p0 + rr * sin(a) - sx;
           dIn = rr * (1.0 - cos(a));
         }
-        // верх экрана подвёрнут, как край листа, и расправляется вместе со свитком
-        float topCurl = 0.55 * (1.0 - smoothstep(0.0, 0.75, lin));
-        float q = h * (1.0 - topCurl * 1.4);
+        // верх экрана с самого начала прямой (verver: без подвёрнутого края)
         float yy = yRel * h;
         float dY = 0.0;
-        if (yy > q && topCurl > 0.0) {
-          float a = (yy - q) / (h * 0.35);
-          dY = q + h * 0.35 * sin(a) - yy;
-          dIn += h * 0.35 * (1.0 - cos(a));
-        }
         float e = clamp(uEnter, 0.0, 1.0);
         float settle = smoothstep(0.86, 1.0, e);
         // пока кольцо встаёт, экраны сомкнуты без зазора (как в DialKit), зазор появляется в конце

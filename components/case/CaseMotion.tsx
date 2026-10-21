@@ -142,9 +142,8 @@ export function CaseMotion({ children }: { children: React.ReactNode }) {
     { scope: root }
   );
 
-  return (
-    <div ref={root} style={{ display: "contents" }}>
-      {children}
-    </div>
-  );
+  // Обёртка — обычный блок, не display: contents: у такого элемента нет рамки, и Next.js
+  // при переходе на кейс считал страницу уже видимой и не прокручивал её наверх
+  // (кейс открывался на середине, там, где была прокрутка главной)
+  return <div ref={root}>{children}</div>;
 }
