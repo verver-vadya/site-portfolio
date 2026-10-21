@@ -87,6 +87,15 @@
 :global(html.scene-on) .noScene {
   display: none;
 }
+/* на телефоне работы не поднимаются из воды (кольцо там вёрсткой): просто «Работы ниже» */
+@media (max-aspect-ratio: 4/5) {
+  :global(html.scene-on) .withScene {
+    display: none;
+  }
+  :global(html.scene-on) .noScene {
+    display: inline;
+  }
+}
 
 @media (max-width: 720px) {
   .hero {

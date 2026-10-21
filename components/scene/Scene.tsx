@@ -2,7 +2,7 @@
 // Холст WebGL на весь экран за страницей. Отдельный кусок кода: грузится только на главной
 // и только там, где WebGL работает и в системе не выключены анимации.
 import { advance, Canvas } from "@react-three/fiber";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { SceneCase } from "@/lib/scene-bus";
 import { World } from "./World";
 
@@ -16,9 +16,9 @@ export type SceneProps = {
 
 export default function Scene({ cases, home, navigate, host, onReady }: SceneProps) {
   const [busy, setBusy] = useState(false); // панель раскрывается в страницу кейса
-  const [covered, setCovered] = useState(false); // список работ ниже закрыл сцену целиком
+  const [covered, setCovered] = useState(false); // блок ниже закрыл сцену целиком
   const [hidden, setHidden] = useState(false);
-  // вертикальный экран (телефон): вместо кольца карточки из скриншотов с телефона всплывают по одной
+  // вертикальный экран (телефон): кольцо там вёрсткой (Stage), сцена рисует только первый экран
   const [portrait, setPortrait] = useState(() => innerWidth / innerHeight < 0.8);
 
   useEffect(() => {
@@ -27,15 +27,11 @@ export default function Scene({ cases, home, navigate, host, onReady }: ScenePro
     return () => removeEventListener("resize", check);
   }, []);
 
-  const ringCases = useMemo(
-    () => (portrait ? cases.map((c) => ({ ...c, shots: c.phone.length ? c.phone : c.shots })) : cases),
-    [cases, portrait]
-  );
-
   useEffect(() => {
     if (!home) return;
+    // на телефоне сцену закрывает уже блок с кольцом: дальше она не рисует
     const check = () => {
-      const after = document.querySelector("[data-scene-after]");
+      const after = document.querySelector(portrait ? "[data-scene-stage]" : "[data-scene-after]");
       setCovered(!!after && after.getBoundingClientRect().top <= 0);
     };
     check();
@@ -45,7 +41,7 @@ export default function Scene({ cases, home, navigate, host, onReady }: ScenePro
       removeEventListener("scroll", check);
       removeEventListener("resize", check);
     };
-  }, [home]);
+  }, [home, portrait]);
 
   useEffect(() => {
     const onVis = () => setHidden(document.hidden);
@@ -76,7 +72,7 @@ export default function Scene({ cases, home, navigate, host, onReady }: ScenePro
   return (
     <Canvas
       flat
-      dpr={[1, 1.75]}
+      dpr={[1, portrait ? 1.5 : 1.75]}
       frameloop={running && !record ? "always" : "never"}
       gl={{ antialias: true, alpha: false, stencil: false, powerPreference: "high-performance" }}
       camera={{ fov: 30, near: 0.1, far: 600, position: [0, 0.3, 10] }}
@@ -85,13 +81,13 @@ export default function Scene({ cases, home, navigate, host, onReady }: ScenePro
     >
       <World
         key={portrait ? "portrait" : "landscape"}
-        cases={ringCases}
+        cases={cases}
         home={home}
         navigate={navigate}
         host={host}
         onReady={onReady}
         setBusy={setBusy}
-        rise={portrait}
+        noRing={portrait}
       />
     </Canvas>
   );

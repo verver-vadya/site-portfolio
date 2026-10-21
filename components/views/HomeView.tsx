@@ -20,6 +20,7 @@ export function HomeView({ lang }: { lang: Lang }) {
           title: c.title,
           meta: `${c.niche} · ${c.city} · ${c.year} · ${t.status[c.status]}`,
           tagline: c.tagline,
+          phone: c.phone[0],
         }))}
       />
       {/* дальше страница наезжает на сцену и закрывает её */}
