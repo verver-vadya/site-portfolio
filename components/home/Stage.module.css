@@ -55,6 +55,9 @@
   .stage {
     height: calc(var(--svh, 1svh) * 100);
     background: linear-gradient(to bottom, transparent, var(--c-paper) calc(var(--svh, 1svh) * 12));
+    /* боковые карточки дуги не должны раздвигать страницу вбок: иначе Safari открывает сайт уменьшенным */
+    overflow: hidden;
+    overflow: clip;
   }
 }
 .arc {
