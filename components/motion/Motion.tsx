@@ -82,10 +82,10 @@ export function Motion() {
       const top = Math.round(stage.getBoundingClientRect().top + scrollY);
       const y = scrollY;
       if (y <= 2 || y >= top - 2) return;
-      // На телефоне вверх к надписи только если сдвинули больше трети экрана, иначе обратно к работам
-      // (verver: чуть сдвинул страницу с дуги, и она уже уезжала к первому экрану)
-      const back = lenis.current ? 0 : innerHeight * 0.35;
-      const to = dir < 0 && top - y > back ? 0 : top;
+      // На телефоне к надписи только если сдвинули вверх больше трети экрана, а при меньшем сдвиге
+      // страница остаётся, где её оставили (verver: чуть сдвинул с дуги, и она уже уезжала наверх)
+      if (!lenis.current && dir < 0 && top - y <= innerHeight * 0.35) return;
+      const to = dir < 0 ? 0 : top;
       snapping = true;
       const done = () => {
         snapping = false;
