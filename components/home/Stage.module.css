@@ -36,8 +36,7 @@
   text-align: center;
   padding-inline: var(--gutter);
 }
-.touch,
-.rise {
+.touch {
   display: none;
 }
 @media (hover: none) {
@@ -49,20 +48,50 @@
   }
 }
 
-/* Вертикальный экран (телефон): вместо кольца работы по одной всплывают из воды, пока блок
-   листают вниз (components/scene/World.tsx, rise). На каждую работу около 90 % высоты экрана
-   прокрутки, первая и последняя стоят чуть дольше */
+/* Вертикальный экран (телефон): кольцо вёрсткой (Arc в Stage.tsx), без 3D-сцены под ним.
+   Блок высотой в экран и непрозрачный: наезжает на воду первого экрана и закрывает её, дальше
+   сцена не рисует (Scene.tsx). Сверху мягкий переход, чтобы край блока не резал воду */
 @media (max-aspect-ratio: 4/5) {
   .stage {
-    height: calc(var(--svh, 1svh) * (100 + 90 * (var(--n, 3) - 0.4)));
+    height: calc(var(--svh, 1svh) * 100);
+    background: linear-gradient(to bottom, transparent, var(--c-paper) calc(var(--svh, 1svh) * 12));
   }
-  .mouse,
-  .touch {
-    display: none;
-  }
-  .rise {
-    display: inline;
-  }
+}
+.arc {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin-block: var(--s-4);
+  perspective: 1100px;
+  touch-action: pan-y pinch-zoom; /* вбок карточки ведёт палец (Stage.tsx), вверх-вниз листается страница */
+}
+/* карточка: скриншот телефона во всю высоту дуги, но не шире 62 % экрана */
+.card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: min(100%, calc(62vw * 1688 / 780));
+  aspect-ratio: 780 / 1688;
+  transform: translate(-50%, -50%);
+  backface-visibility: hidden;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--c-plate);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c-ink) 14%, transparent);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-drag: none;
+}
+.card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0%;
+  pointer-events: none;
+}
+.card:focus-visible {
+  outline: 2px solid var(--c-focus, var(--c-ink));
+  outline-offset: 4px;
 }
 
 /* под подписью затемнение снизу, чтобы текст читался поверх отражений. Холст сцены высотой
@@ -88,6 +117,21 @@
   display: grid;
   gap: var(--s-2);
   max-width: 40ch;
+}
+.text {
+  display: grid;
+}
+.text > * {
+  grid-area: 1 / 1;
+  display: grid;
+  align-content: end;
+  gap: var(--s-2);
+}
+.ghost {
+  visibility: hidden;
+}
+.ghost .title {
+  animation: none;
 }
 .title {
   font-family: var(--font-display);
