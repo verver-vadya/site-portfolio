@@ -255,6 +255,7 @@ export function World({ cases, home, navigate, host, onReady, setBusy, noRing }:
     wordP: 0, // как глубоко ушла надпись, сглаженно
     enterT: 0, // время появления 0..1, без сглаживания
     enterWant: false,
+    hold: false, // блок с кольцом встал на место во время подъёма: подъём доигрывает, но кольцо уже не тонет
     front: -1,
     hovered: -1,
     pointer: { x: 0, y: 0, inside: false, moved: 0, lastWater: null as THREE.Vector3 | null },
@@ -900,17 +901,18 @@ export function World({ cases, home, navigate, host, onReady, setBusy, noRing }:
     // целиком уходит под воду за 0,7 секунды, и только потом всплывает надпись.
     // Подъём играет один раз, пока страницу не обновят. Потом кольцо не тонет и не всплывает:
     // когда листают вверх, оно уезжает вниз вместе с блоком, а сверху открывается надпись.
-    const page = !noRing && sceneState.risen;
+    const page = !noRing && (sceneState.risen || s.hold);
     if (page) {
       s.enterWant = true;
-      s.enterT = 1;
+      if (sceneState.risen) s.enterT = 1;
       s.sink = 0;
       if (stageTop !== null) s.ringOff = clamp(Math.round(stageTop), 0, L.H);
     } else if (p > 0.55) s.enterWant = true;
     else if (p < 0.48) s.enterWant = false;
     s.prevRise = s.rise;
     if (page) {
-      // кольцо стоит на месте
+      // кольцо стоит на месте; если блок встал раньше, чем кончился подъём, подъём доигрывает
+      s.enterT = clamp(s.enterT + dt / tune.enterTime);
     } else if (s.enterWant) {
       if (s.sink >= 1) {
         // ушло под воду целиком: следующий подъём снова с самого начала
@@ -929,8 +931,10 @@ export function World({ cases, home, navigate, host, onReady, setBusy, noRing }:
     const sk = s.sink * s.sink * (3 - 2 * s.sink);
     built.ring.position.set(0, -sk * (LIFT + HP + 0.3), -built.ringInfo.radius);
     built.ring.visible = !noRing && s.rise > 0.001 && s.sink < 1 && s.ringOff < L.H;
-    // подъём закончился, и блок с кольцом встал на место: дальше кольцо ездит со страницей
-    if (!noRing && !page && s.enterT >= 1 && stageTop !== null && stageTop <= 1) sceneState.risen = true;
+    // Блок с кольцом встал на место: с этого кадра кольцо ездит со страницей и больше не тонет,
+    // даже если подъём ещё идёт (verver: листнул вверх на хвосте подъёма, и кольцо ушло под воду)
+    if (!noRing && !page && s.enterWant && s.sink === 0 && stageTop !== null && stageTop <= 1) s.hold = true;
+    if (s.hold && s.enterT >= 1) sceneState.risen = true;
 
     // буквы: покачиваются на воде и по очереди тонут. Пока кольцо над водой, надпись ждёт под водой
     const wordH = WORD_H * L.scale;
