@@ -177,8 +177,8 @@ export function Stage({ cases, lang }: { cases: StageCase[]; lang: Lang }) {
 // ---------- дуга кольца на телефоне ----------
 // Карточки стоят на цилиндре большого радиуса: передняя прямо, соседние чуть повёрнуты и отходят
 // назад всего на несколько процентов, поэтому при листании карточка почти не меняет размер.
-// Палец ведёт кольцо сам (как на компьютере): вбок — крутим, вверх-вниз — обычная прокрутка
-// страницы (touch-action: pan-y). Положение и отрисовка в одном кадре requestAnimationFrame,
+// Палец ведёт кольцо сам (как на компьютере): вбок — крутим, и страница при этом стоит;
+// вверх-вниз — обычная прокрутка страницы (touch-action: pan-y). Положение и отрисовка в одном кадре requestAnimationFrame,
 // поэтому карточки идут ровно за пальцем. После отпускания пружина без отскока ставит работу
 // по центру; заметный свайп всегда доводит хотя бы до соседней. Меняются только transform и opacity.
 type ArcApi = { go: (i: number) => void };
@@ -271,7 +271,23 @@ function Arc({
     onActive(st.current.front);
     addEventListener("resize", draw);
     const s = st.current;
+    // Safari листает страницу и при свайпе вбок (вертикальная часть движения пальца), touch-action
+    // это не останавливает. Как только жест решён как «вбок», страницу держим на месте.
+    // (verver: кручу дугу, а сайт пролистывается)
+    const el = box.current;
+    const hold = (e: TouchEvent) => {
+      const d = drag.current;
+      const p = e.touches[0];
+      if (!d || !p || !e.cancelable) return;
+      // touchmove может прийти раньше pointermove: тогда решаем по тому же правилу, что и onMove
+      const dx = p.clientX - d.x;
+      const dy = p.clientY - d.y;
+      const side = d.lock ? d.lock === "x" : Math.abs(dx) + Math.abs(dy) >= 8 && Math.abs(dx) > Math.abs(dy) * 0.8;
+      if (side) e.preventDefault();
+    };
+    el?.addEventListener("touchmove", hold, { passive: false });
     return () => {
+      el?.removeEventListener("touchmove", hold);
       removeEventListener("resize", draw);
       cancelAnimationFrame(s.raf);
       s.raf = 0;
