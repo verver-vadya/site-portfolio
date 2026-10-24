@@ -52,7 +52,14 @@
 }
 
 /* крупное наведение: скриншот медленно приближается, текст стоит на месте */
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  /* Сохраняем слой видимого скриншота между наведениями:
+     без подсказки вход и выход повторно перерисовывают сетку работ. */
+  [data-view="desktop"] .desktop,
+  [data-view="phone"] .phone {
+    will-change: transform;
+  }
+
   [data-view="desktop"] .card:hover .desktop,
   [data-view="phone"] .card:hover .phone {
     transform: scale(1.035);
