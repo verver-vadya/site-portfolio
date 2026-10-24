@@ -1,0 +1,98 @@
+{
+  "results": [
+    {
+      "check": "geometry before/after",
+      "pass": true
+    },
+    {
+      "check": "dark hover",
+      "transform": "matrix(1.035, 0, 0, 1.035, 0, 0)",
+      "layer": "transform",
+      "pass": true
+    },
+    {
+      "check": "dark phone preview",
+      "transform": "matrix(1.035, 0, 0, 1.035, 0, 0)",
+      "layer": "transform",
+      "opacity": "1"
+    },
+    {
+      "check": "light hover",
+      "transform": "matrix(1.035, 0, 0, 1.035, 0, 0)",
+      "layer": "transform",
+      "pass": true
+    },
+    {
+      "check": "light phone preview",
+      "transform": "matrix(1.035, 0, 0, 1.035, 0, 0)",
+      "layer": "transform",
+      "opacity": "1"
+    },
+    {
+      "check": "simultaneous X/Y during interruptions",
+      "samples": 241,
+      "maxAxisDifference": 0,
+      "pass": true
+    },
+    {
+      "check": "width 375",
+      "width": 375,
+      "scroll": 375,
+      "layer": "auto",
+      "pass": true
+    },
+    {
+      "check": "width 768",
+      "width": 768,
+      "scroll": 753,
+      "layer": "transform",
+      "pass": true,
+      "note": "Desktop scrollbar gutter accounts for 15px"
+    },
+    {
+      "check": "width 1280",
+      "width": 1280,
+      "scroll": 1265,
+      "layer": "transform",
+      "pass": true,
+      "note": "Desktop scrollbar gutter accounts for 15px"
+    },
+    {
+      "check": "reduced motion",
+      "transform": "none",
+      "layer": "auto",
+      "pass": true
+    },
+    {
+      "check": "home 3D state",
+      "scene": true,
+      "canvas": true
+    },
+    {
+      "check": "home card to case",
+      "scrollY": 0,
+      "pass": true
+    },
+    {
+      "check": "case aly",
+      "pass": true
+    },
+    {
+      "check": "case vyhod-14",
+      "pass": true
+    },
+    {
+      "check": "case russian-gothic-club",
+      "pass": true
+    },
+    {
+      "check": "case tikhiy-zal",
+      "pass": true
+    },
+    {
+      "check": "case kare",
+      "pass": true
+    }
+  ],
+  "errors": []
+}
