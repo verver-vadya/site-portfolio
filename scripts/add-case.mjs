@@ -17,16 +17,23 @@ if (!slug || !url || !/^[a-z0-9-]+$/.test(slug)) {
 const dir = path.resolve("content/cases", slug);
 await fs.mkdir(dir, { recursive: true });
 
-const browser = await chromium.launch(
-  process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}
-);
+const browser = await chromium.launch({
+  ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}),
+  ...(process.env.CASE_WAIT ? { args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] } : {}),
+});
 
 // Три экрана: начало страницы и два места дальше по странице (начала секций, если они есть)
 async function shoot(kind, viewport, scale) {
   const page = await browser.newPage({ viewport, deviceScaleFactor: scale });
+  // Reduced motion places 3D animals in their final pose instead of waiting for
+  // a long entrance on software-rendered screenshot machines.
+  if (process.env.CASE_WAIT) await page.emulateMedia({ reducedMotion: "reduce" });
   // CASE_STORAGE='{"ключ":"значение"}' — записать в localStorage до загрузки (например, чтобы не показывать интро)
   if (process.env.CASE_STORAGE) await page.addInitScript((s) => Object.entries(JSON.parse(s)).forEach(([k, v]) => localStorage.setItem(k, v)), process.env.CASE_STORAGE);
   await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
+  // Some cases reveal their 3D subject after the canvas has loaded. Capture only
+  // when the case-specific scene marker reports the finished entrance.
+  if (process.env.CASE_WAIT) await page.locator(process.env.CASE_WAIT).waitFor({ state: "attached", timeout: 90000 });
   // без полосы прокрутки: иначе справа на снимке остаётся пустая полоса
   await page.addStyleTag({ content: "html { scrollbar-width: none; scrollbar-gutter: auto !important; } ::-webkit-scrollbar { display: none; }" });
   await page.waitForTimeout(1500);
